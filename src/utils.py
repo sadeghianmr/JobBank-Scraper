@@ -2,6 +2,7 @@
 
 import random
 import time
+import yaml
 from datetime import datetime
 from pathlib import Path
 import pandas as pd
@@ -119,3 +120,49 @@ def format_job_data(job_data: Dict[str, Any]) -> Dict[str, Any]:
     cleaned['scraped_at'] = datetime.now().isoformat()
     
     return cleaned
+
+
+def load_search_config(config_file: str) -> Dict[str, Any]:
+    """
+    Load search configuration from a YAML file.
+    
+    Args:
+        config_file: Path to YAML configuration file
+        
+    Returns:
+        Dictionary containing configuration
+        
+    Raises:
+        FileNotFoundError: If config file doesn't exist
+        ValueError: If config file is invalid
+    """
+    config_path = Path(config_file)
+    
+    if not config_path.exists():
+        raise FileNotFoundError(f"Config file not found: {config_file}")
+    
+    try:
+        with open(config_path, 'r', encoding='utf-8') as f:
+            config = yaml.safe_load(f)
+    except yaml.YAMLError as e:
+        raise ValueError(f"Invalid YAML file: {str(e)}")
+    
+    # Validate config structure
+    if not isinstance(config, dict):
+        raise ValueError("Config file must contain a dictionary")
+    
+    if 'searches' not in config:
+        raise ValueError("Config file must contain 'searches' key")
+    
+    if not isinstance(config['searches'], list):
+        raise ValueError("'searches' must be a list")
+    
+    # Validate each search entry
+    for i, search in enumerate(config['searches']):
+        if not isinstance(search, dict):
+            raise ValueError(f"Search entry {i} must be a dictionary")
+        
+        if 'keyword' not in search and 'location' not in search:
+            raise ValueError(f"Search entry {i} must have at least 'keyword' or 'location'")
+    
+    return config

@@ -8,6 +8,7 @@ A Python scraper for [Canada's Job Bank](https://www.jobbank.gc.ca) that actuall
 - Saves everything to a SQLite database so you don't scrape the same jobs twice
 - Exports to CSV, JSON, or Excel whenever you want
 - Filters out jobs from Indeed/CareerBeacon if you only want direct Job Bank postings
+- Run batch searches with multiple keywords/locations from a YAML config file
 - Respects rate limits with built-in delays
 
 ## Quick Start
@@ -66,6 +67,37 @@ python main.py -k "analyst" -l "Montreal" --no-db
 python main.py -k "developer" -l "Toronto" --no-headless
 ```
 
+### Batch Searches from Config File
+
+Instead of running searches one at a time, you can define multiple searches in a YAML config file:
+
+**1. Create your config file** (e.g., `my_searches.yaml`):
+```yaml
+settings:
+  job_bank_only: true
+  format: csv
+
+searches:
+  - keyword: "python developer"
+    location: "Toronto"
+    pages: 3
+  
+  - keyword: "data analyst"
+    location: "Vancouver"
+    pages: 2
+  
+  - keyword: "software engineer"
+    location: "Montreal"
+    pages: 5
+```
+
+**2. Run the batch search:**
+```bash
+python main.py --config my_searches.yaml
+```
+
+The scraper will run all searches automatically and save each result to a separate file. See [config.example.yaml](config.example.yaml) for more examples.
+
 ### Python Code
 
 ```python
@@ -92,6 +124,7 @@ More examples in the `examples/` directory.
 | `-p, --pages` | Number of pages to scrape (default: 1) |
 | `-o, --output` | Custom output filename (without extension) |
 | `-f, --format` | Output format: csv, json, or excel (default: csv) |
+| `-c, --config` | Run batch searches from YAML config file |
 | `--job-bank-only` | Only include jobs posted directly on Job Bank |
 | `--no-db` | Disable database storage (only save to file) |
 | `--no-headless` | Run browser in visible mode (useful for debugging) |
@@ -108,6 +141,9 @@ Job Bank aggregates from multiple sites. Use `--job-bank-only` if you only want 
 
 ### Multiple Export Formats
 CSV, JSON, or Excel. Your choice. Set custom filenames with `-o`.
+
+### Batch Processing
+Define multiple searches in a YAML config file and run them all at once. Perfect for monitoring different job titles across multiple locations.
 
 ### Smart Scraping
 - 2 second delay between pages (so we don't hammer their servers)

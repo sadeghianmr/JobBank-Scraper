@@ -1,0 +1,39 @@
+# Example configuration file for batch job searches
+# Copy this file to your own config (e.g., my_searches.yaml) and customize
+
+# Global settings (optional - can be overridden by command line args)
+settings:
+  headless: true           # Run browser in headless mode
+  use_database: true       # Save jobs to database
+  job_bank_only: false     # Only scrape Job Bank postings (exclude Indeed, etc.)
+  format: csv              # Output format: csv, json, or excel
+
+# List of searches to perform
+searches:
+  # Search 1: Python developer jobs in Toronto
+  - keyword: "python developer"
+    location: "Toronto"
+    pages: 3
+  
+  # Search 2: Data analyst jobs in Vancouver
+  - keyword: "data analyst"
+    location: "Vancouver"
+    pages: 2
+  
+  # Search 3: Software engineer jobs in Montreal
+  - keyword: "software engineer"
+    location: "Montreal"
+    pages: 5
+  
+  # Search 4: Any developer jobs in Calgary
+  - keyword: "developer"
+    location: "Calgary"
+    pages: 1
+  
+  # Search 5: Remote data science jobs (search entire Canada)
+  - keyword: "remote data scientist"
+    pages: 3
+  
+  # You can add as many searches as you need
+  # Each search should have at least 'keyword' or 'location'
+  # The 'pages' field is optional (defaults to 1)

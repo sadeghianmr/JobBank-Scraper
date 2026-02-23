@@ -14,7 +14,9 @@ __pycache__/
 data/*.csv
 data/*.json
 data/*.xlsx
+data/*.db
 !data/.gitkeep
+
 
 # IDE
 .vscode/
@@ -32,3 +34,6 @@ Thumbs.db
 
 # Logs
 *.log
+
+# Ignore the my_searches.yaml file if you want to keep your search configurations private
+my_searches.yaml
