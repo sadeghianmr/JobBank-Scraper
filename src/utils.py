@@ -90,11 +90,12 @@ def clean_text(text: str) -> str:
     # Remove extra whitespace and normalize
     cleaned = " ".join(text.split()).strip()
     
-    # Remove common prefixes from Job Bank
-    prefixes_to_remove = ['Location ', 'Salary ', 'Employer ']
+    # Remove common prefixes from Job Bank (with or without space)
+    prefixes_to_remove = ['Location', 'Salary', 'Employer']
     for prefix in prefixes_to_remove:
         if cleaned.startswith(prefix):
-            cleaned = cleaned[len(prefix):]
+            # Remove prefix and any following whitespace
+            cleaned = cleaned[len(prefix):].lstrip()
     
     return cleaned
 

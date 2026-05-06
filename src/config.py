@@ -9,6 +9,9 @@ BASE_DIR = Path(__file__).resolve().parent.parent
 # Data directory
 DATA_DIR = BASE_DIR / "data"
 
+# User configuration directory
+USER_CONFIGS_DIR = BASE_DIR / "user_configs"
+
 # Job Bank URLs
 JOB_BANK_BASE_URL = "https://www.jobbank.gc.ca"
 JOB_SEARCH_URL = f"{JOB_BANK_BASE_URL}/jobsearch/jobsearch"
@@ -18,6 +21,11 @@ HEADLESS = True  # Run browser in headless mode
 TIMEOUT = 30000  # Page load timeout in milliseconds
 WAIT_TIME = 2    # Wait time between requests (in seconds)
 MAX_RETRIES = 3  # Maximum number of retries for failed requests
+
+# User request limits
+MIN_USER_LIMIT_REQUEST = 1
+MAX_USER_LIMIT_REQUEST = 100000
+DEFAULT_USER_LIMIT_REQUEST = 1000
 
 # User agent to avoid detection
 USER_AGENTS = [

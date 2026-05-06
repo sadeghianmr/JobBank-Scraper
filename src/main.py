@@ -132,19 +132,19 @@ def main():
         epilog="""
 Examples:
   # Search for Python jobs in Toronto
-  python main.py -k "python developer" -l "Toronto, ON" -p 3
+  python -m src.main -k "python developer" -l "Toronto, ON" -p 3
   
   # Search for data analyst jobs anywhere in Canada
-  python main.py -k "data analyst" -p 5
+  python -m src.main -k "data analyst" -p 5
   
   # Search and save as JSON
-  python main.py -k "software engineer" -l "Vancouver" -f json
+  python -m src.main -k "software engineer" -l "Vancouver" -f json
   
   # Only show jobs posted directly on Job Bank (exclude Indeed, etc.)
-  python main.py -k "developer" -l "Toronto" --job-bank-only
+  python -m src.main -k "developer" -l "Toronto" --job-bank-only
   
   # Run with visible browser (not headless)
-  python main.py -k "project manager" --no-headless
+  python -m src.main -k "project manager" --no-headless
         """
     )
     

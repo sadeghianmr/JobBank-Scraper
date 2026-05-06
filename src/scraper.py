@@ -5,6 +5,7 @@ from bs4 import BeautifulSoup
 from typing import List, Dict, Any, Optional
 import time
 from urllib.parse import urlencode
+from pathlib import Path
 
 from src.config import (
     JOB_SEARCH_URL, 
@@ -20,6 +21,10 @@ from src.utils import (
     format_job_data
 )
 from src.database import JobBankDB
+from src.logging_config import get_component_logger
+
+
+logger = get_component_logger(__name__, "scraper/scraper.log")
 
 
 class JobBankScraper:
@@ -111,11 +116,21 @@ class JobBankScraper:
             params['searchstring'] = keyword
         if location:
             params['locationstring'] = location
+        if job_bank_only:
+            # URL-level filter for "Posted on Job Bank"
+            params['fsrc'] = '16'
             
         search_url = f"{JOB_SEARCH_URL}?{urlencode(params)}"
         
         print(f"\n🔍 Searching for: '{keyword}' in '{location}'")
         print(f"📄 Scraping up to {max_pages} page(s)...")
+        logger.info(
+            "Searching Job Bank: keyword=%r location=%r max_pages=%s job_bank_only=%s",
+            keyword,
+            location,
+            max_pages,
+            job_bank_only
+        )
         
         for page_num in range(1, max_pages + 1):
             try:
@@ -128,10 +143,12 @@ class JobBankScraper:
                     page_url = search_url
                 
                 print(f"\n📑 Scraping page {page_num}...")
+                logger.info("Scraping search results page %s: %s", page_num, page_url)
                 jobs = self._scrape_search_page(page_url, job_bank_only=job_bank_only)
                 
                 if not jobs:
                     print(f"No more jobs found on page {page_num}")
+                    logger.info("No jobs found on page %s; stopping search", page_num)
                     break
                     
                 # Save to database if enabled
@@ -140,11 +157,19 @@ class JobBankScraper:
                     new_jobs_count += stats['new']
                     existing_jobs_count += stats['existing']
                     print(f"✓ Found {len(jobs)} jobs on page {page_num} ({stats['new']} new, {stats['existing']} existing)")
+                    logger.info(
+                        "Page %s scraped: %s jobs (%s new, %s existing)",
+                        page_num,
+                        len(jobs),
+                        stats['new'],
+                        stats['existing']
+                    )
                 else:
                     print(f"✓ Found {len(jobs)} jobs on page {page_num}")
+                    logger.info("Page %s scraped: %s jobs", page_num, len(jobs))
                 
                 all_jobs.extend(jobs)
-                
+
                 # Wait before next page
                 if page_num < max_pages and jobs:
                     print("⏳ Waiting 2 seconds before next page...")
@@ -152,14 +177,20 @@ class JobBankScraper:
                     
             except Exception as e:
                 print(f"❌ Error on page {page_num}: {str(e)}")
+                logger.exception("Error scraping page %s", page_num)
                 break
         
         print(f"\n✅ Total jobs scraped: {len(all_jobs)}")
+        logger.info("Search complete: %s total jobs scraped", len(all_jobs))
         if self.use_database and self.db:
             print(f"   📊 Database: {new_jobs_count} new, {existing_jobs_count} already existed")
         return all_jobs
     
-    def _scrape_search_page(self, url: str, job_bank_only: bool = False) -> List[Dict[str, Any]]:
+    def _scrape_search_page(
+        self,
+        url: str,
+        job_bank_only: bool = False
+    ) -> List[Dict[str, Any]]:
         """
         Scrape a single search results page.
         
@@ -195,24 +226,29 @@ class JobBankScraper:
         
         for article in job_articles:
             try:
-                job_data = self._extract_job_data(article)
+                job_data = self._extract_job_data(
+                    article,
+                    assume_job_bank_source=job_bank_only
+                )
                 if job_data:
-                    # Filter by source if job_bank_only is True
-                    if job_bank_only and job_data.get('source') != 'Job Bank':
-                        continue
                     jobs.append(format_job_data(job_data))
             except Exception as e:
                 print(f"⚠️  Error extracting job data: {str(e)}")
                 continue
         
         return jobs
-    
-    def _extract_job_data(self, article) -> Optional[Dict[str, Any]]:
+
+    def _extract_job_data(
+        self,
+        article,
+        assume_job_bank_source: bool = False
+    ) -> Optional[Dict[str, Any]]:
         """
         Extract job data from a job listing element.
         
         Args:
             article: BeautifulSoup element (an <a> tag with class resultJobItem)
+            assume_job_bank_source: If True, skip source parsing and trust the URL filter
             
         Returns:
             Dictionary with job data or None
@@ -262,6 +298,10 @@ class JobBankScraper:
         if telework_elem:
             job['job_type'] = clean_text(telework_elem.get_text())
         
+        if assume_job_bank_source:
+            job['source'] = 'Job Bank'
+            return job
+
         # Job source - determine if posted on Job Bank or external source
         # Check for "Posted on Job Bank" indicator
         posted_on_jb = article.find('span', class_='postedonJB')

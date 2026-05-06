@@ -1,7 +1,27 @@
+# Core scraper dependencies
+# Used by src/scraper.py, src/database.py, src/utils.py, and the CLI scraper.
 playwright>=1.48.0
-beautifulsoup4>=4.12.0
-pandas>=2.0.0
+beautifulsoup4>=4.12.2
 lxml>=5.0.0
-python-dotenv>=1.0.0
+pandas>=2.0.0
 openpyxl>=3.0.0
 pyyaml>=6.0.0
+python-dotenv>=1.0.0
+
+# API backend dependencies
+# Used by api/ and start_api.sh.
+fastapi>=0.100.0
+uvicorn[standard]>=0.24.0
+pydantic>=2.0.0
+
+# Telegram bot dependencies
+# Used by bot/ and start_bot.sh.
+python-telegram-bot>=20.7
+httpx>=0.25.2
+schedule>=1.2.0
+
+# Test dependencies
+# Used by tests/ and pytest.ini.
+pytest>=7.4.3
+pytest-asyncio>=0.21.1
+pytest-cov>=4.1.0

@@ -1,232 +1,213 @@
 # Canada Job Bank Scraper
 
-A Python scraper for [Canada's Job Bank](https://www.jobbank.gc.ca) that actually works. Built because the Job Bank website doesn't have an API, and manually browsing through job listings gets old fast.
+This project collects job postings from Canada Job Bank and manages them through a FastAPI backend and a Telegram bot.
+
+I designed it this way because I wanted to practice building an API, connecting it to a real client, and keeping the scraper logic separate from the user interface. Right now the project runs locally, but the structure is ready for a future deployment where the API can run on a server and provide a better experience for users.
 
 ## What It Does
 
-- Scrapes job postings from Job Bank (keyword, location, you know the drill)
-- Saves everything to a SQLite database so you don't scrape the same jobs twice
-- Exports to CSV, JSON, or Excel whenever you want
-- Filters out jobs from Indeed/CareerBeacon if you only want direct Job Bank postings
-- Run batch searches with multiple keywords/locations from a YAML config file
-- Respects rate limits with built-in delays
+- Scrapes Canada Job Bank search results
+- Stores jobs in SQLite databases
+- Keeps each Telegram user's jobs and settings separate
+- Lets users manage searches, blacklist keywords, and request new jobs from Telegram
+- Posts new jobs to a configured Telegram channel
+- Avoids reposting the same job twice
+- Provides a FastAPI backend with API docs
+- Includes a command-line scraper for manual checks and exports
+- Includes tests for the API, services, database, and scraper workflow
 
-## Quick Start
+## Tech Stack
 
-```bash
-# Clone the repo
-git clone https://github.com/yourusername/JobBank-Scraper.git
-cd JobBank-Scraper
-
-# Set up virtual environment
-python3 -m venv venv
-source venv/bin/activate  # On Windows: venv\Scripts\activate
-
-# Install dependencies
-pip install -r requirements.txt
-
-# Install Playwright browser
-python -m playwright install chromium
-
-# Run your first search
-python main.py -k "python developer" -l "Toronto" -p 3
-```
-
-That's it. Check the `data/` folder for your results.
-
-## Usage
-
-### Command Line
-
-```bash
-# Basic search
-python main.py -k "data analyst" -l "Vancouver"
-
-# Multiple pages (25 jobs per page)
-python main.py -k "software engineer" -l "Toronto" -p 5
-
-# Only Job Bank postings (no Indeed, CareerBeacon, etc)
-python main.py -k "developer" -l "Montreal" --job-bank-only
-
-# Save as JSON instead of CSV
-python main.py -k "designer" -l "Calgary" -f json
-
-# Custom output filename
-python main.py -k "engineer" -l "Toronto" -o my_search -f excel
-
-# Check what's in your database
-python main.py --stats
-
-# Export database to CSV
-python main.py --export my_jobs.csv
-
-# Skip database (only save to file)
-python main.py -k "analyst" -l "Montreal" --no-db
-
-# Run with visible browser (for debugging)
-python main.py -k "developer" -l "Toronto" --no-headless
-```
-
-### Batch Searches from Config File
-
-Instead of running searches one at a time, you can define multiple searches in a YAML config file:
-
-**1. Create your config file** (e.g., `my_searches.yaml`):
-```yaml
-settings:
-  job_bank_only: true
-  format: csv
-
-searches:
-  - keyword: "python developer"
-    location: "Toronto"
-    pages: 3
-  
-  - keyword: "data analyst"
-    location: "Vancouver"
-    pages: 2
-  
-  - keyword: "software engineer"
-    location: "Montreal"
-    pages: 5
-```
-
-**2. Run the batch search:**
-```bash
-python main.py --config my_searches.yaml
-```
-
-The scraper will run all searches automatically and save each result to a separate file. See [config.example.yaml](config.example.yaml) for more examples.
-
-### Python Code
-
-```python
-from src.scraper import quick_search
-
-# Simple search
-jobs = quick_search(
-    keyword="data scientist",
-    location="Toronto",
-    max_pages=3
-)
-
-print(f"Found {len(jobs)} jobs")
-```
-
-More examples in the `examples/` directory.
-
-### CLI Options Reference
-
-| Option | Description |
-|--------|-------------|
-| `-k, --keyword` | Job keyword or title to search for |
-| `-l, --location` | Location (city, province, or postal code) |
-| `-p, --pages` | Number of pages to scrape (default: 1) |
-| `-o, --output` | Custom output filename (without extension) |
-| `-f, --format` | Output format: csv, json, or excel (default: csv) |
-| `-c, --config` | Run batch searches from YAML config file |
-| `--job-bank-only` | Only include jobs posted directly on Job Bank |
-| `--no-db` | Disable database storage (only save to file) |
-| `--no-headless` | Run browser in visible mode (useful for debugging) |
-| `--stats` | Show database statistics |
-| `--export FILE` | Export database to CSV file |
-
-## Features
-
-### Database Storage
-Jobs are automatically saved to SQLite. Run the same search tomorrow? It'll skip jobs you already have and only grab new ones. Use `--no-db` if you want to skip database storage.
-
-### Source Filtering
-Job Bank aggregates from multiple sites. Use `--job-bank-only` if you only want jobs posted directly to Job Bank.
-
-### Multiple Export Formats
-CSV, JSON, or Excel. Your choice. Set custom filenames with `-o`.
-
-### Batch Processing
-Define multiple searches in a YAML config file and run them all at once. Perfect for monitoring different job titles across multiple locations.
-
-### Smart Scraping
-- 2 second delay between pages (so we don't hammer their servers)
-- Automatic retry on failures
-- Tracks when jobs were first seen and last updated
-- Headless by default (use `--no-headless` to see the browser)
+- Python
+- FastAPI
+- Playwright
+- BeautifulSoup
+- SQLite
+- python-telegram-bot
+- Pytest
 
 ## Project Structure
 
-```
-JobBank-Scraper/
-├── src/
-│   ├── scraper.py      # Main scraping logic
-│   ├── database.py     # SQLite operations
-│   ├── config.py       # Settings
-│   └── utils.py        # Helper functions
-├── examples/           # Usage examples
-├── data/               # Your scraped data + database
-├── main.py             # CLI interface
-└── README.md           # You are here
+```text
+api/                  FastAPI backend
+bot/                  Telegram bot
+src/                  Shared scraper, database, config, utilities, and CLI
+tests/                Unit and integration tests
+examples/             Small API, scraper, and database examples
+data/                 Local runtime databases and exports
+logs/                 Runtime logs grouped by app area
+user_configs/         Per-user Telegram configuration files
 ```
 
-## Database Schema
+Folder details:
 
-Single table called `JobBank`:
+- [api/README.md](api/README.md)
+- [bot/README.md](bot/README.md)
+- [src/README.md](src/README.md)
+- [tests/README.md](tests/README.md)
+- [ARCHITECTURE.md](ARCHITECTURE.md)
 
-| Column | What It Is |
-|--------|-----------|
-| job_id | Unique ID from Job Bank |
-| title | Job title |
-| company | Company name |
-| location | Where the job is |
-| salary | Pay info (if available) |
-| job_type | Remote/On-site/Hybrid |
-| date_posted | When it was posted |
-| url | Direct link to posting |
-| source | Job Bank, Indeed, etc |
-| scraped_at | When we first found it |
-| last_seen | Last time we saw it |
-| is_active | Still online or not |
+## How It Works
 
-## Configuration
+The Telegram bot is the user-facing part of the app. It does not scrape directly. Instead, it calls the FastAPI backend.
 
-Edit `src/config.py` if you want to change:
-- Headless mode (default: enabled)
-- Timeouts
-- Delays between requests
-- User agent strings
+The API receives scrape and database requests, then uses the shared code in `src/` to scrape Job Bank, store results, query jobs, and update posting status.
 
-## Common Issues
+When a user clicks "Check for Jobs Now":
 
-**"No jobs found"**
-- Make sure your keyword/location combo has results on the website first
-- Try a broader search
+```text
+Telegram bot
+    -> FastAPI backend
+    -> Job Bank scraper
+    -> user SQLite database
+    -> bot filters unposted jobs
+    -> bot posts jobs to Telegram
+    -> API marks posted jobs as posted
+```
 
-**Browser installation fails**
+Each user has a config file:
+
+```text
+user_configs/user_<telegram_id>.yaml
+```
+
+Each user also has a separate database:
+
+```text
+data/user_<telegram_id>/jobs.db
+```
+
+## Setup
+
+Create a virtual environment:
+
 ```bash
-python -m playwright install --force chromium
+python3 -m venv venv
+source venv/bin/activate
 ```
 
-**Import errors**
-Make sure you're in the project root and venv is activated.
+Install dependencies:
 
-## Legal Stuff
+```bash
+pip install -r requirements.txt
+python -m playwright install chromium
+```
 
-This is for personal use. Don't abuse it:
-- Scrape responsibly (built-in delays help with this)
-- Check Job Bank's Terms of Service
-- Don't use this for commercial data harvesting
+Create a local environment file:
 
-The website structure might change. If scraping stops working, open an issue.
+```bash
+cp .env.example .env
+```
 
-## Contributing
+Edit `.env`:
 
-Found a bug? PRs welcome. Please:
-- Test your changes
-- Keep the coding style consistent
-- Update docs if needed
+```env
+TELEGRAM_BOT_TOKEN=your_telegram_bot_token_here
+API_BASE_URL=http://localhost:8000
+```
+
+Do not commit `.env`, runtime databases, logs, or generated files.
+
+## Run The App
+
+Start the API:
+
+```bash
+./start_api.sh
+```
+
+Start the Telegram bot in another terminal:
+
+```bash
+./start_bot.sh
+```
+
+Then open Telegram and send `/start` to the bot.
+
+The API docs are available at:
+
+```text
+http://localhost:8000/docs
+```
+
+## User Config Example
+
+```yaml
+channel_id: "@JobBankJobs"
+scraping:
+  interval_hours: 12
+  headless: true
+  job_bank_only: true
+searches:
+  - keyword: "Data Analyst"
+    location: "Canada"
+    pages: 10
+filters:
+  keywords_blacklist: []
+posting:
+  add_hashtags: true
+  show_search_separator: true
+user_limit_request: 1000
+user_post_delay: 3
+```
+
+## Command-Line Scraper
+
+The API and bot are the main workflow, but the CLI is useful for manual scraping, quick testing, and exports.
+
+```bash
+python -m src.main -k "data analyst" -l "Vancouver" -p 3
+python -m src.main -k "developer" -l "Toronto" --job-bank-only
+python -m src.main --stats
+python -m src.main --export jobs.csv
+```
+
+## Testing
+
+Run the test suite:
+
+```bash
+pytest
+```
+
+Run focused API/service tests:
+
+```bash
+pytest tests/services/test_job_service.py tests/api/test_jobs.py
+```
+
+Integration tests use the real Job Bank website, so they are slower and should be run only when needed:
+
+```bash
+pytest tests/integration -v
+```
+
+## Runtime Files
+
+These are created while the app runs and should stay out of Git:
+
+- `.env`
+- `data/`
+- `logs/**/*.log`
+- `user_configs/user_*.yaml`
+- `.coverage`
+- `.pytest_cache/`
+- `__pycache__/`
+
+The repo keeps placeholder folders where useful, such as `logs/api/.gitkeep`.
+
+## Notes
+
+This project is for personal job-search automation and learning. Use reasonable request limits and delays. The scraper depends on the public Job Bank website structure, so selectors may need updates if the site changes.
+
+## Future Improvements
+
+- Deploy the API to a server
+- Move from local SQLite files to a hosted database
+- Add authentication for API access
+- Add scheduled background scraping
+- Improve monitoring and error reporting
 
 ## License
 
-MIT License - see LICENSE file
-
----
-
-Built because job hunting is already hard enough.
+MIT License. See [LICENSE](LICENSE).

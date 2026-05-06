@@ -1,0 +1,29 @@
+# Example of the per-user config created by the Telegram bot.
+# Real user configs are stored in user_configs/user_<telegram_id>.yaml.
+
+channel_id: "@YourJobChannel"
+
+scraping:
+  interval_hours: 12
+  headless: true
+  job_bank_only: true
+
+searches:
+  - keyword: "Data Analyst"
+    location: "Vancouver"
+    pages: 3
+  - keyword: "Python Developer"
+    location: "Remote"
+    pages: 2
+
+filters:
+  keywords_blacklist:
+    - senior
+    - manager
+
+posting:
+  add_hashtags: true
+  show_search_separator: true
+
+user_limit_request: 1000
+user_post_delay: 3

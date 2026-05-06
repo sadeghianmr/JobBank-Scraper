@@ -1,49 +1,47 @@
-# Job Bank Examples
+# Examples
 
-This directory contains example scripts showing how to use the scraper.
+This folder contains small examples for the current project structure. They are meant for quick testing and for showing how the API, scraper, and user config fit together.
 
-## Files
+## Example List
 
-### 📘 `basic_usage.py`
-Start here if you're new. Shows:
-- Simple job searches
-- Multi-page scraping
-- Filtering by source (Job Bank only)
-- Saving in different formats
-- Disabling database
+| File | What It Shows | Uses Real Job Bank? |
+| --- | --- | --- |
+| `api_workflow.py` | Calls the local FastAPI app, runs one scrape, reads unposted jobs, marks a sample as posted, and prints stats. | Yes |
+| `manual_scrape.py` | Uses the shared scraper in `src/` directly, without the API or Telegram bot. | Yes |
+| `example_user_config.yaml` | Shows the shape of a user config file saved by the Telegram bot. | No |
 
-### 🔧 `advanced_usage.py`
-For more control. Covers:
-- Using the scraper class directly
-- Running multiple searches
-- Filtering results
-- Visible browser mode
-- Error handling
+`_paths.py` is only an import helper so examples can run from the project root without installing the package.
 
-### 🗄️ `database_examples.py`
-Working with the SQLite database:
-- Checking statistics
-- Querying stored jobs
-- Exporting data
-- Understanding deduplication
+## Before Running
 
-## How to Run
+Activate the virtual environment:
 
 ```bash
-# Activate your virtual environment
 source venv/bin/activate
-
-# Run any example
-python examples/basic_usage.py
-python examples/advanced_usage.py
-python examples/database_examples.py
 ```
 
-Each file has multiple examples - uncomment the ones you want to try!
+Install Playwright's browser once if you have not already:
 
-## Quick Tips
+```bash
+python -m playwright install chromium
+```
 
-- All examples use real scraping (they hit the actual Job Bank website)
-- Start with 1-2 pages while testing
-- The database automatically prevents duplicates
-- Check `python main.py --help` for all command-line options
+## Run The Examples
+
+API workflow:
+
+```bash
+# terminal 1
+./start_api.sh
+
+# terminal 2
+python examples/api_workflow.py
+```
+
+Direct scraper:
+
+```bash
+python examples/manual_scrape.py
+```
+
+The API and scraper examples make real requests to Job Bank. Keep the page count small while testing.

@@ -15,6 +15,10 @@ data/*.csv
 data/*.json
 data/*.xlsx
 data/*.db
+data/**/*.csv
+data/**/*.json
+data/**/*.xlsx
+data/**/*.db
 !data/.gitkeep
 
 
@@ -31,9 +35,22 @@ Thumbs.db
 
 # Environment variables
 .env
+!.env.example
 
 # Logs
 *.log
+logs/**/*.log
+!logs/**/.gitkeep
 
-# Ignore the my_searches.yaml file if you want to keep your search configurations private
+# Configuration files with sensitive data
 my_searches.yaml
+bot_config.yaml
+user_configs/*.yaml
+
+# Test and coverage output
+.coverage
+htmlcov/
+.pytest_cache/
+
+# Scraper debug output
+debug/
