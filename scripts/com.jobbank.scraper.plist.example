@@ -9,11 +9,11 @@
     <key>ProgramArguments</key>
     <array>
         <string>/bin/bash</string>
-        <string>/Users/mrsadeghian/Desktop/MrS/Code/JobBank-Scraper/scripts/run_stack.sh</string>
+        <string>/Users/mrsadeghian/Code/JobBank-Scraper/scripts/run_stack.sh</string>
     </array>
 
     <key>WorkingDirectory</key>
-    <string>/Users/mrsadeghian/Desktop/MrS/Code/JobBank-Scraper</string>
+    <string>/Users/mrsadeghian/Code/JobBank-Scraper</string>
 
     <key>RunAtLoad</key>
     <true/>
@@ -22,9 +22,9 @@
     <true/>
 
     <key>StandardOutPath</key>
-    <string>/Users/mrsadeghian/Desktop/MrS/Code/JobBank-Scraper/logs/bot/launchd.out.log</string>
+    <string>/Users/mrsadeghian/Code/JobBank-Scraper/logs/bot/launchd.out.log</string>
 
     <key>StandardErrorPath</key>
-    <string>/Users/mrsadeghian/Desktop/MrS/Code/JobBank-Scraper/logs/errors/launchd.err.log</string>
+    <string>/Users/mrsadeghian/Code/JobBank-Scraper/logs/errors/launchd.err.log</string>
 </dict>
 </plist>

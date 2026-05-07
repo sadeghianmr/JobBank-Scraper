@@ -24,7 +24,7 @@ The script has user-editable variables at the top:
 
 ```bash
 JOBBANK_USER_ID="${JOBBANK_USER_ID:-6192760553}"
-PROJECT_DIR="${PROJECT_DIR:-/Users/mrsadeghian/Desktop/MrS/Code/JobBank-Scraper}"
+PROJECT_DIR="${PROJECT_DIR:-/Users/mrsadeghian/Code/JobBank-Scraper}"
 RUN_DURATION_SECONDS="${RUN_DURATION_SECONDS:-1800}"
 ```
 
@@ -43,6 +43,14 @@ Install it locally:
 mkdir -p ~/Library/LaunchAgents
 cp scripts/com.jobbank.scraper.plist.example ~/Library/LaunchAgents/com.jobbank.scraper.plist
 launchctl load ~/Library/LaunchAgents/com.jobbank.scraper.plist
+```
+
+If you keep a Desktop shortcut, make it a symlink to the real project folder:
+
+```bash
+mkdir -p ~/Code
+mv "/Users/mrsadeghian/Desktop/MrS/Code/JobBank-Scraper" ~/Code/JobBank-Scraper
+ln -s ~/Code/JobBank-Scraper "/Users/mrsadeghian/Desktop/MrS/Code/JobBank-Scraper"
 ```
 
 Stop it:
