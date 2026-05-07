@@ -62,6 +62,8 @@ The bot reads runtime secrets and service URLs from `.env`:
 ```env
 TELEGRAM_BOT_TOKEN=your_telegram_bot_token_here
 API_BASE_URL=http://localhost:8000
+API_REQUEST_TIMEOUT_SECONDS=300
+BOT_SCHEDULER_POLL_SECONDS=300
 ```
 
 The current bot is the modular package in `bot/`. Older bot entry points were removed to keep the runtime path unambiguous.
@@ -149,6 +151,7 @@ scraping:
   interval_hours: 12
   headless: true
   job_bank_only: true
+  last_job_search_at: null
 searches:
   - keyword: "Data Analyst"
     location: "Canada"
@@ -163,6 +166,8 @@ user_post_delay: 3
 ```
 
 `user_limit_request` controls how many stored jobs the bot/API request when fetching unposted jobs or searching the database. The API falls back to this value when no explicit `limit` is provided.
+
+`scraping.last_job_search_at` is updated after a successful scrape. The bot runs a background interval check while it is online. On startup and during each interval pass, it compares this timestamp with `scraping.interval_hours`; if enough time has passed, it runs the user's configured searches again.
 
 ## Job Bank Only Mode
 

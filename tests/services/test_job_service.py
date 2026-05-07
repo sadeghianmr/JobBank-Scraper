@@ -12,13 +12,14 @@ from src.database import JobBankDB
 from src.config import DEFAULT_USER_LIMIT_REQUEST
 
 
-def test_get_user_db_path():
+def test_get_user_db_path(tmp_path, monkeypatch):
     """
     Test that user database paths are created correctly.
     
     Each user should get their own isolated database.
     The path should follow the pattern: data/user_{id}/jobs.db
     """
+    monkeypatch.setattr("api.services.job_service.BASE_DIR", tmp_path)
     service = JobService()
     
     user_id = 12345

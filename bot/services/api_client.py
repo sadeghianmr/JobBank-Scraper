@@ -14,6 +14,7 @@ Why use an API client?
 
 import httpx
 import logging
+import os
 from typing import List, Dict, Any, Optional
 
 logger = logging.getLogger(__name__)
@@ -30,16 +31,30 @@ class JobBankAPI:
     - Response parsing
     """
     
-    def __init__(self, base_url: str = "http://localhost:8000"):
+    def __init__(self, base_url: str = "http://localhost:8000", timeout_seconds: Optional[float] = None):
         """
         Initialize API client.
         
         Args:
             base_url: Base URL of the FastAPI server (default: http://localhost:8000)
+            timeout_seconds: HTTP timeout for API calls
         """
         self.base_url = base_url.rstrip("/")
-        self.client = httpx.Client(timeout=30.0)  # 30 second timeout
-        logger.info(f"API client initialized with base URL: {self.base_url}")
+        if timeout_seconds is None:
+            timeout_seconds = self._get_timeout_from_env()
+
+        self.client = httpx.Client(timeout=timeout_seconds)
+        logger.info(
+            f"API client initialized with base URL: {self.base_url}, "
+            f"timeout={timeout_seconds}s"
+        )
+
+    def _get_timeout_from_env(self) -> float:
+        """Read API timeout from environment, falling back to a scraper-friendly default."""
+        try:
+            return float(os.getenv("API_REQUEST_TIMEOUT_SECONDS", "300"))
+        except ValueError:
+            return 300.0
     
     def _handle_response(self, response: httpx.Response) -> Dict[str, Any]:
         """

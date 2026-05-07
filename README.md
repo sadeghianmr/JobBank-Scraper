@@ -104,6 +104,8 @@ Edit `.env`:
 ```env
 TELEGRAM_BOT_TOKEN=your_telegram_bot_token_here
 API_BASE_URL=http://localhost:8000
+API_REQUEST_TIMEOUT_SECONDS=300
+BOT_SCHEDULER_POLL_SECONDS=300
 ```
 
 Do not commit `.env`, runtime databases, logs, or generated files.
@@ -138,6 +140,7 @@ scraping:
   interval_hours: 12
   headless: true
   job_bank_only: true
+  last_job_search_at: null
 searches:
   - keyword: "Data Analyst"
     location: "Canada"
@@ -195,6 +198,10 @@ These are created while the app runs and should stay out of Git:
 - `__pycache__/`
 
 The repo keeps placeholder folders where useful, such as `logs/api/.gitkeep`.
+
+## Mac Automation
+
+Optional Mac helper scripts live in [scripts/README.md](scripts/README.md). They can run the API and bot for a limited time, then stop both processes to avoid leaving them in memory all day.
 
 ## Notes
 

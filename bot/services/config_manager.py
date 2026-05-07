@@ -19,9 +19,10 @@ Example:
 
 import yaml
 import logging
+from datetime import datetime, timedelta, timezone
 from pathlib import Path
 from typing import Dict, Any, Optional
-from src.config import BASE_DIR, DEFAULT_USER_LIMIT_REQUEST, USER_CONFIGS_DIR
+from src.config import DEFAULT_USER_LIMIT_REQUEST, USER_CONFIGS_DIR
 from src.user_config import normalize_user_limit_request
 
 
@@ -63,6 +64,29 @@ class ConfigManager:
             True if user config exists
         """
         return self.get_user_config_path(user_id).exists()
+
+    def list_user_ids(self) -> list[int]:
+        """Return user IDs that have a config file."""
+        user_ids = []
+
+        for path in self.users_dir.glob("user_*.yaml"):
+            try:
+                user_ids.append(int(path.stem.replace("user_", "")))
+            except ValueError:
+                self.logger.warning(f"Skipping config with invalid user id: {path.name}")
+
+        return sorted(user_ids)
+
+    def list_configured_user_ids(self) -> list[int]:
+        """Return user IDs that completed setup and have a channel configured."""
+        configured_users = []
+
+        for user_id in self.list_user_ids():
+            config = self.load_user_config(user_id)
+            if config.get("channel_id"):
+                configured_users.append(user_id)
+
+        return configured_users
     
     def load_user_config(self, user_id: int) -> Dict[str, Any]:
         """
@@ -85,6 +109,13 @@ class ConfigManager:
         try:
             with open(config_path, 'r', encoding='utf-8') as f:
                 config = yaml.safe_load(f)
+            if not isinstance(config, dict):
+                self.logger.warning(f"Invalid config structure for user {user_id}, returning default")
+                return self._get_default_config(user_id)
+
+            if self._ensure_config_defaults(config):
+                self.save_user_config(user_id, config)
+
             self.logger.info(f"Config loaded for user {user_id}")
             return config
         except Exception as e:
@@ -306,6 +337,109 @@ class ConfigManager:
         """Get the user's configured API request limit from YAML config."""
         config = self.load_user_config(user_id)
         return normalize_user_limit_request(config.get('user_limit_request'))
+
+    def get_last_job_search_at(self, user_id: int) -> Optional[datetime]:
+        """Return the last scrape time as a timezone-aware datetime."""
+        config = self.load_user_config(user_id)
+        value = config.get('scraping', {}).get('last_job_search_at')
+
+        if not value:
+            return None
+
+        try:
+            parsed = datetime.fromisoformat(str(value).replace("Z", "+00:00"))
+        except ValueError:
+            self.logger.warning(f"Invalid last_job_search_at for user {user_id}: {value}")
+            return None
+
+        if parsed.tzinfo is None:
+            return parsed.replace(tzinfo=timezone.utc)
+
+        return parsed.astimezone(timezone.utc)
+
+    def mark_job_search_completed(self, user_id: int, when: Optional[datetime] = None):
+        """Save the time when a user's job search/scrape completed."""
+        timestamp = when or datetime.now(timezone.utc)
+        timestamp = timestamp.astimezone(timezone.utc).replace(microsecond=0)
+        self.update_config_field(
+            user_id,
+            'scraping.last_job_search_at',
+            timestamp.isoformat()
+        )
+
+    def is_job_search_due(self, user_id: int, now: Optional[datetime] = None) -> bool:
+        """Check whether enough time passed since the user's last scrape."""
+        config = self.load_user_config(user_id)
+        scraping = config.get('scraping', {})
+
+        try:
+            interval_hours = float(scraping.get('interval_hours', 1))
+        except (TypeError, ValueError):
+            interval_hours = 1
+
+        last_search = self.get_last_job_search_at(user_id)
+        if last_search is None:
+            return True
+
+        current_time = now or datetime.now(timezone.utc)
+        if current_time.tzinfo is None:
+            current_time = current_time.replace(tzinfo=timezone.utc)
+
+        return current_time.astimezone(timezone.utc) - last_search >= timedelta(hours=interval_hours)
+
+    def _ensure_config_defaults(self, config: Dict[str, Any]) -> bool:
+        """Add missing fields to older user configs without changing existing values."""
+        changed = False
+
+        def ensure_dict(key: str) -> Dict[str, Any]:
+            nonlocal changed
+            if not isinstance(config.get(key), dict):
+                config[key] = {}
+                changed = True
+            return config[key]
+
+        scraping = ensure_dict('scraping')
+        scraping_defaults = {
+            'interval_hours': 1,
+            'headless': True,
+            'job_bank_only': True,
+            'last_job_search_at': None,
+        }
+        for key, value in scraping_defaults.items():
+            if key not in scraping:
+                scraping[key] = value
+                changed = True
+
+        filters = ensure_dict('filters')
+        if 'keywords_blacklist' not in filters:
+            filters['keywords_blacklist'] = []
+            changed = True
+
+        posting = ensure_dict('posting')
+        posting_defaults = {
+            'add_hashtags': True,
+            'show_search_separator': True,
+        }
+        for key, value in posting_defaults.items():
+            if key not in posting:
+                posting[key] = value
+                changed = True
+
+        stats = ensure_dict('stats')
+        for key in ('posted_today', 'total_posted'):
+            if key not in stats:
+                stats[key] = 0
+                changed = True
+
+        if 'user_limit_request' not in config:
+            config['user_limit_request'] = self.default_user_limit_request
+            changed = True
+
+        if 'user_post_delay' not in config:
+            config['user_post_delay'] = 3
+            changed = True
+
+        return changed
     
     def _get_default_config(self, user_id: int) -> Dict[str, Any]:
         """
@@ -323,7 +457,8 @@ class ConfigManager:
             'scraping': {
                 'interval_hours': 1,
                 'headless': True,
-                'job_bank_only': True
+                'job_bank_only': True,
+                'last_job_search_at': None
             },
             'searches': [],
             'filters': {

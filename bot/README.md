@@ -1,6 +1,6 @@
 # Bot
 
-`bot/` contains the current Telegram bot. It handles user setup, search configuration, blacklist settings, database search, manual job checks, and posting new jobs to a Telegram channel.
+`bot/` contains the current Telegram bot. It handles user setup, search configuration, blacklist settings, database search, manual job checks, interval checks, and posting new jobs to a Telegram channel.
 
 ## Main Files
 
@@ -18,6 +18,8 @@ Create `.env` in the project root:
 ```env
 TELEGRAM_BOT_TOKEN=your_telegram_bot_token_here
 API_BASE_URL=http://localhost:8000
+API_REQUEST_TIMEOUT_SECONDS=300
+BOT_SCHEDULER_POLL_SECONDS=300
 ```
 
 Start the API first, then run:
@@ -27,3 +29,5 @@ Start the API first, then run:
 ```
 
 User settings are saved in `user_configs/user_<telegram_id>.yaml`. Bot logs are written to `logs/bot/bot.log`, with errors also written to `logs/errors/errors.log`.
+
+While running, the bot reads each configured user's `scraping.interval_hours` and `scraping.last_job_search_at`. It checks once on startup and then keeps checking in the background. If the interval has passed, it runs that user's searches again and updates `last_job_search_at` after a successful scrape.

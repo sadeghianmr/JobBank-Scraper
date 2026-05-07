@@ -16,6 +16,7 @@ Why this is separate:
 
 import logging
 from telegram import Update, InlineKeyboardMarkup, InlineKeyboardButton
+from telegram.error import TelegramError
 from telegram.ext import ContextTypes
 
 from bot.services.config_manager import ConfigManager
@@ -34,6 +35,13 @@ class SearchHandler:
         """
         self.config_mgr = config_manager
         self.logger = logging.getLogger(__name__)
+
+    async def _safe_answer(self, query, *args, **kwargs):
+        """Answer a callback query, ignoring stale Telegram callback IDs."""
+        try:
+            await query.answer(*args, **kwargs)
+        except TelegramError as e:
+            self.logger.warning(f"Could not answer callback: {e}")
     
     async def show_searches_menu(self, query, user_id: int):
         """
@@ -187,9 +195,9 @@ class SearchHandler:
         removed = self.config_mgr.remove_search(user_id, index)
         
         if removed:
-            await query.answer("✅ Search removed")
+            await self._safe_answer(query, "✅ Search removed")
         else:
-            await query.answer("❌ Search not found", show_alert=True)
+            await self._safe_answer(query, "❌ Search not found", show_alert=True)
         
         # Refresh searches menu
         await self.show_searches_menu(query, user_id)

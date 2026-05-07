@@ -46,7 +46,12 @@ class JobPoster:
         # Track active users (user_id -> is_running status)
         self.active_users = {}
     
-    async def check_and_post_jobs(self, user_id: int) -> int:
+    async def check_and_post_jobs(
+        self,
+        user_id: int,
+        notify_user: bool = False,
+        trigger_label: str = "Automatic check"
+    ) -> int:
         """
         Check for new jobs and post them to user's channel.
         
@@ -62,6 +67,8 @@ class JobPoster:
         
         Args:
             user_id: Telegram user ID
+            notify_user: If True, send start/done status messages to the user
+            trigger_label: Label used in automatic status messages
             
         Returns:
             Number of jobs posted
@@ -80,6 +87,15 @@ class JobPoster:
         if not searches:
             self.logger.info(f"User {user_id} has no searches configured")
             return 0
+
+        if notify_user:
+            await self._send_user_status_message(
+                user_id,
+                (
+                    f"🔍 {trigger_label} started.\n\n"
+                    f"The bot is checking {len(searches)} search(es)."
+                )
+            )
         
         # Step 1: Trigger scraping for each search
         self.logger.info(f"Triggering scraping for {len(searches)} searches")
@@ -92,6 +108,8 @@ class JobPoster:
             'job_bank_only': config['scraping'].get('job_bank_only', True)
         }
         
+        scrape_completed = False
+
         for search in searches:
             try:
                 keyword = search.get('keyword')
@@ -111,10 +129,20 @@ class JobPoster:
                 )
                 
                 self.logger.info(f"Scrape result: {result.get('jobs_found', 0)} jobs found")
+                scrape_completed = True
                 
             except Exception as e:
                 self.logger.error(f"Error scraping for user {user_id}: {e}")
                 continue
+
+        if scrape_completed:
+            self.config_mgr.mark_job_search_completed(user_id)
+        elif notify_user:
+            await self._send_user_status_message(
+                user_id,
+                f"⚠️ {trigger_label} finished, but no scrape completed successfully."
+            )
+            return 0
         
         # Step 2: Get all unposted jobs from API (no per-run cap on Telegram side)
         try:
@@ -130,10 +158,20 @@ class JobPoster:
             )
         except Exception as e:
             self.logger.error(f"Error fetching unposted jobs: {e}")
+            if notify_user:
+                await self._send_user_status_message(
+                    user_id,
+                    f"⚠️ {trigger_label} finished, but the bot could not fetch unposted jobs."
+                )
             return 0
         
         if not unposted:
             self.logger.info(f"No new jobs to post for user {user_id}")
+            if notify_user:
+                await self._send_user_status_message(
+                    user_id,
+                    f"✅ {trigger_label} complete.\n\nNo new jobs were found."
+                )
             return 0
         
         # Step 3: Filter by blacklist
@@ -147,6 +185,11 @@ class JobPoster:
         
         if not unposted:
             self.logger.info(f"All jobs filtered by blacklist for user {user_id}")
+            if notify_user:
+                await self._send_user_status_message(
+                    user_id,
+                    f"✅ {trigger_label} complete.\n\nAll new jobs were filtered by your blacklist."
+                )
             return 0
         
         # No cap: post all unposted jobs returned by the API
@@ -163,7 +206,22 @@ class JobPoster:
         self.config_mgr.increment_stat(user_id, 'total_posted', posted_count)
         
         self.logger.info(f"Successfully posted {posted_count} jobs for user {user_id}")
+        if notify_user:
+            await self._send_user_status_message(
+                user_id,
+                (
+                    f"✅ {trigger_label} complete.\n\n"
+                    f"{posted_count} job(s) posted to your channel."
+                )
+            )
         return posted_count
+
+    async def _send_user_status_message(self, user_id: int, message: str):
+        """Send a status message to the user, ignoring notification failures."""
+        try:
+            await self.bot.send_message(chat_id=user_id, text=message)
+        except TelegramError as e:
+            self.logger.warning(f"Could not send status message to user {user_id}: {e}")
     
     async def _post_jobs_to_channel(
         self, 

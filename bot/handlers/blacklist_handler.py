@@ -16,6 +16,7 @@ Why this is separate:
 
 import logging
 from telegram import Update, InlineKeyboardMarkup, InlineKeyboardButton
+from telegram.error import TelegramError
 from telegram.ext import ContextTypes
 
 from bot.services.config_manager import ConfigManager
@@ -34,6 +35,13 @@ class BlacklistHandler:
         """
         self.config_mgr = config_manager
         self.logger = logging.getLogger(__name__)
+
+    async def _safe_answer(self, query, *args, **kwargs):
+        """Answer a callback query, ignoring stale Telegram callback IDs."""
+        try:
+            await query.answer(*args, **kwargs)
+        except TelegramError as e:
+            self.logger.warning(f"Could not answer callback: {e}")
     
     async def show_blacklist_menu(self, query, user_id: int):
         """
@@ -197,11 +205,11 @@ class BlacklistHandler:
             removed = self.config_mgr.remove_blacklist_keyword(user_id, index)
             
             if removed:
-                await query.answer(f"✅ Removed '{keyword}'")
+                await self._safe_answer(query, f"✅ Removed '{keyword}'")
             else:
-                await query.answer("❌ Keyword not found", show_alert=True)
+                await self._safe_answer(query, "❌ Keyword not found", show_alert=True)
         else:
-            await query.answer("❌ Keyword not found", show_alert=True)
+            await self._safe_answer(query, "❌ Keyword not found", show_alert=True)
         
         # Refresh blacklist menu
         await self.show_blacklist_menu(query, user_id)

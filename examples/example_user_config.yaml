@@ -7,6 +7,7 @@ scraping:
   interval_hours: 12
   headless: true
   job_bank_only: true
+  last_job_search_at: null
 
 searches:
   - keyword: "Data Analyst"

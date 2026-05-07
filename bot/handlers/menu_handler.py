@@ -16,6 +16,7 @@ Why this is separate:
 
 import logging
 from telegram import Update, InlineKeyboardMarkup, InlineKeyboardButton
+from telegram.error import TelegramError
 from telegram.ext import ContextTypes
 
 from bot.services.config_manager import ConfigManager
@@ -37,6 +38,13 @@ class MenuHandler:
         
         # Job poster will be set by main bot
         self.job_poster = None
+
+    async def _safe_answer(self, query, *args, **kwargs):
+        """Answer a callback query, ignoring stale Telegram callback IDs."""
+        try:
+            await query.answer(*args, **kwargs)
+        except TelegramError as e:
+            self.logger.warning(f"Could not answer callback: {e}")
     
     def set_job_poster(self, job_poster):
         """
@@ -141,13 +149,14 @@ class MenuHandler:
         
         # Check if user is configured
         if not self.config_mgr.is_user_configured(user_id):
-            await query.answer("❌ Please configure your bot first!", show_alert=True)
+            await self._safe_answer(query, "❌ Please configure your bot first!", show_alert=True)
             return
         
         # Check if user has searches configured
         config = self.config_mgr.load_user_config(user_id)
         if not config.get('searches'):
-            await query.answer(
+            await self._safe_answer(
+                query,
                 "❌ No searches configured! Add some searches first.",
                 show_alert=True
             )
@@ -216,7 +225,7 @@ class MenuHandler:
         self.logger.debug(f"Button callback: {action} from user {user_id}")
         
         # Answer callback to stop loading indicator
-        await query.answer()
+        await self._safe_answer(query)
         
         # Route based on action
         if action == "back_to_menu":

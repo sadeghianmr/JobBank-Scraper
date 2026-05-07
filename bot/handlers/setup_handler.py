@@ -291,7 +291,8 @@ class SetupHandler:
             'scraping': {
                 'interval_hours': config_data.get('interval_hours', 1),
                 'headless': True,
-                'job_bank_only': config_data.get('job_bank_only', True)
+                'job_bank_only': config_data.get('job_bank_only', True),
+                'last_job_search_at': None
             },
             'searches': [],
             'filters': {

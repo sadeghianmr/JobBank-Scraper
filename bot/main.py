@@ -21,6 +21,7 @@ import asyncio
 import os
 from dotenv import load_dotenv
 from telegram import Bot
+from telegram.error import TelegramError
 from telegram.ext import (
     Application, CommandHandler, CallbackQueryHandler,
     MessageHandler, filters
@@ -77,6 +78,11 @@ class JobBankBot:
         self.api_client = None
         self.config_mgr = None
         self.job_poster = None
+        self.interval_check_task = None
+        try:
+            self.scheduler_poll_seconds = int(os.getenv("BOT_SCHEDULER_POLL_SECONDS", "300"))
+        except ValueError:
+            self.scheduler_poll_seconds = 300
         
         # Handlers
         self.setup_handler = None
@@ -208,7 +214,10 @@ class JobBankBot:
         self.logger.debug(f"Callback: {action} from user {user_id}")
         
         # Answer callback to remove loading state
-        await query.answer()
+        try:
+            await query.answer()
+        except TelegramError as e:
+            self.logger.warning(f"Could not answer callback {action} from user {user_id}: {e}")
         
         # Route to appropriate handler
         if action == "back_to_menu":
@@ -251,7 +260,10 @@ class JobBankBot:
         
         else:
             self.logger.warning(f"Unknown callback action: {action}")
-            await query.answer("Unknown action", show_alert=True)
+            try:
+                await query.answer("Unknown action", show_alert=True)
+            except TelegramError as e:
+                self.logger.warning(f"Could not answer unknown callback {action}: {e}")
     
     async def _handle_help(self, update, context):
         """Handle /help command."""
@@ -274,6 +286,8 @@ class JobBankBot:
         await self.application.initialize()
         await self.application.start()
         await self.application.updater.start_polling()
+
+        self.interval_check_task = asyncio.create_task(self._run_interval_check_loop())
         
         # Keep running until interrupted
         try:
@@ -283,10 +297,61 @@ class JobBankBot:
             self.logger.info("Received shutdown signal...")
         finally:
             await self.shutdown()
+
+    async def _run_interval_check_loop(self):
+        """Run due checks on startup, then keep checking while the bot is online."""
+        while True:
+            await self._run_due_checks_once()
+            await asyncio.sleep(self.scheduler_poll_seconds)
+
+    async def _run_due_checks_once(self):
+        """Check configured users and scrape when their interval passed."""
+        user_ids = self.config_mgr.list_configured_user_ids()
+
+        if not user_ids:
+            self.logger.info("No configured users found for interval job checks")
+            return
+
+        self.logger.info(f"Checking {len(user_ids)} configured users for due interval scrapes")
+
+        for user_id in user_ids:
+            try:
+                config = self.config_mgr.load_user_config(user_id)
+                if not config.get('searches'):
+                    self.logger.info(f"Skipping interval check for user {user_id}: no searches configured")
+                    continue
+
+                if not self.config_mgr.is_job_search_due(user_id):
+                    self.logger.info(f"Skipping interval check for user {user_id}: interval has not passed")
+                    continue
+
+                self.logger.info(f"Interval passed for user {user_id}; checking jobs")
+                self.job_poster.start_user(user_id)
+                posted_count = await self.job_poster.check_and_post_jobs(
+                    user_id,
+                    notify_user=True,
+                    trigger_label="Scheduled job check"
+                )
+                self.logger.info(
+                    f"Interval check complete for user {user_id}: posted {posted_count} jobs"
+                )
+                await asyncio.sleep(2)
+
+            except asyncio.CancelledError:
+                raise
+            except Exception as e:
+                self.logger.error(f"Interval check failed for user {user_id}: {e}")
     
     async def shutdown(self):
         """Gracefully shutdown the bot."""
         self.logger.info("Shutting down bot...")
+
+        if self.interval_check_task and not self.interval_check_task.done():
+            self.interval_check_task.cancel()
+            try:
+                await self.interval_check_task
+            except asyncio.CancelledError:
+                self.logger.info("Interval job check task cancelled")
         
         if self.application:
             await self.application.stop()

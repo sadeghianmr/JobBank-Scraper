@@ -11,12 +11,13 @@ import shutil
 from pathlib import Path
 from fastapi.testclient import TestClient
 
+import api.services.job_service as job_service_module
 from api.main import app
 from src.database import JobBankDB
 
 
 @pytest.fixture
-def client():
+def client(tmp_path, monkeypatch):
     """
     Create a test client for the FastAPI app.
     
@@ -28,6 +29,7 @@ def client():
             response = client.get("/health")
             assert response.status_code == 200
     """
+    monkeypatch.setattr(job_service_module, "BASE_DIR", tmp_path)
     return TestClient(app)
 
 
