@@ -29,7 +29,7 @@ def test_empty_user_config_does_not_break_user_listing(tmp_path):
     assert manager.list_configured_user_ids() == []
 
 
-def test_old_user_config_gets_last_search_default(tmp_path):
+def test_old_user_config_gets_scraping_defaults(tmp_path):
     users_dir = tmp_path / "user_configs"
     manager = ConfigManager(users_dir=users_dir)
     manager.save_user_config(
@@ -49,7 +49,9 @@ def test_old_user_config_gets_last_search_default(tmp_path):
     saved = yaml.safe_load(manager.get_user_config_path(1001).read_text(encoding="utf-8"))
 
     assert config["scraping"]["last_job_search_at"] is None
+    assert config["scraping"]["recent_jobs_only"] is True
     assert saved["scraping"]["last_job_search_at"] is None
+    assert saved["scraping"]["recent_jobs_only"] is True
 
 
 def test_job_search_is_due_when_timestamp_is_missing(tmp_path):

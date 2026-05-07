@@ -28,6 +28,7 @@ These tests cover:
 
 - Per-user database path handling
 - Job filtering and pagination
+- Last-30-days filtering for unposted jobs
 - Mark-as-posted behavior
 - Stats responses
 - API validation

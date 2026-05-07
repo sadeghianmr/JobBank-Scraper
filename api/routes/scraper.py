@@ -25,6 +25,7 @@ async def scrape_jobs(request: ScrapeRequest):
         location=request.location,
         pages=request.pages,
         job_bank_only=request.job_bank_only,
+        recent_jobs_only=request.recent_jobs_only,
         headless=request.headless
     )
     

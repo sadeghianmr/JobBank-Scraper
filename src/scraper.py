@@ -93,7 +93,8 @@ class JobBankScraper:
                     keyword: str = "", 
                     location: str = "",
                     max_pages: int = 1,
-                    job_bank_only: bool = False) -> List[Dict[str, Any]]:
+                    job_bank_only: bool = False,
+                    recent_jobs_only: bool = False) -> List[Dict[str, Any]]:
         """
         Search for jobs on Job Bank.
         
@@ -102,6 +103,7 @@ class JobBankScraper:
             location: Location (city, province, or postal code)
             max_pages: Maximum number of pages to scrape
             job_bank_only: If True, only return jobs posted directly on Job Bank
+            recent_jobs_only: If True, only return jobs posted in the last 30 days
             
         Returns:
             List of job dictionaries
@@ -119,17 +121,21 @@ class JobBankScraper:
         if job_bank_only:
             # URL-level filter for "Posted on Job Bank"
             params['fsrc'] = '16'
+        if recent_jobs_only:
+            # URL-level filter for jobs posted in the last 30 days.
+            params['fage'] = '30'
             
         search_url = f"{JOB_SEARCH_URL}?{urlencode(params)}"
         
         print(f"\n🔍 Searching for: '{keyword}' in '{location}'")
         print(f"📄 Scraping up to {max_pages} page(s)...")
         logger.info(
-            "Searching Job Bank: keyword=%r location=%r max_pages=%s job_bank_only=%s",
+            "Searching Job Bank: keyword=%r location=%r max_pages=%s job_bank_only=%s recent_jobs_only=%s",
             keyword,
             location,
             max_pages,
-            job_bank_only
+            job_bank_only,
+            recent_jobs_only
         )
         
         for page_num in range(1, max_pages + 1):
@@ -145,6 +151,16 @@ class JobBankScraper:
                 print(f"\n📑 Scraping page {page_num}...")
                 logger.info("Scraping search results page %s: %s", page_num, page_url)
                 jobs = self._scrape_search_page(page_url, job_bank_only=job_bank_only)
+
+                if recent_jobs_only and jobs:
+                    before_filter = len(jobs)
+                    jobs = [job for job in jobs if JobBankDB.is_recent_job(job, 30)]
+                    filtered_count = before_filter - len(jobs)
+                    if filtered_count:
+                        logger.info(
+                            "Filtered %s job(s) older than 30 days before saving",
+                            filtered_count
+                        )
                 
                 if not jobs:
                     print(f"No more jobs found on page {page_num}")
@@ -379,7 +395,8 @@ class JobBankScraper:
 
 def quick_search(keyword: str = "", location: str = "", max_pages: int = 1,
                  headless: bool = True, job_bank_only: bool = False,
-                 use_database: bool = True) -> List[Dict[str, Any]]:
+                 use_database: bool = True,
+                 recent_jobs_only: bool = False) -> List[Dict[str, Any]]:
     """
     Quick search function for convenience.
     
@@ -390,9 +407,10 @@ def quick_search(keyword: str = "", location: str = "", max_pages: int = 1,
         headless: Run browser in headless mode
         job_bank_only: If True, only return jobs posted directly on Job Bank
         use_database: Save jobs to database (default: True)
+        recent_jobs_only: If True, only return jobs posted in the last 30 days
         
     Returns:
         List of job dictionaries
     """
     with JobBankScraper(headless=headless, use_database=use_database) as scraper:
-        return scraper.search_jobs(keyword, location, max_pages, job_bank_only)
+        return scraper.search_jobs(keyword, location, max_pages, job_bank_only, recent_jobs_only)

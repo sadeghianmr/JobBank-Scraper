@@ -68,7 +68,16 @@ def run_batch_search(config_file: str, args):
     global_settings = config.get('settings', {})
     headless = not args.no_headless if hasattr(args, 'no_headless') else global_settings.get('headless', True)
     use_database = not args.no_db if hasattr(args, 'no_db') else global_settings.get('use_database', True)
-    job_bank_only = args.job_bank_only if hasattr(args, 'job_bank_only') else global_settings.get('job_bank_only', False)
+    job_bank_only = (
+        args.job_bank_only
+        if getattr(args, 'job_bank_only', None) is not None
+        else global_settings.get('job_bank_only', False)
+    )
+    recent_jobs_only = (
+        args.recent_jobs_only
+        if getattr(args, 'recent_jobs_only', None) is not None
+        else global_settings.get('recent_jobs_only', False)
+    )
     output_format = args.format if hasattr(args, 'format') else global_settings.get('format', 'csv')
     
     searches = config['searches']
@@ -94,6 +103,7 @@ def run_batch_search(config_file: str, args):
                 max_pages=pages,
                 headless=headless,
                 job_bank_only=job_bank_only,
+                recent_jobs_only=recent_jobs_only,
                 use_database=use_database
             )
             
@@ -196,7 +206,15 @@ Examples:
     parser.add_argument(
         '--job-bank-only',
         action='store_true',
+        default=None,
         help='Only return jobs posted directly on Job Bank (exclude external sources like Indeed, CareerBeacon)'
+    )
+
+    parser.add_argument(
+        '--recent-jobs-only',
+        action='store_true',
+        default=None,
+        help='Only return jobs posted in the last 30 days'
     )
     
     # Database options
@@ -263,7 +281,8 @@ Examples:
             location=args.location,
             max_pages=args.pages,
             headless=headless,
-            job_bank_only=args.job_bank_only,
+            job_bank_only=bool(args.job_bank_only),
+            recent_jobs_only=bool(args.recent_jobs_only),
             use_database=use_database
         )
         

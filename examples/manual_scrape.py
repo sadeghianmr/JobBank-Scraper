@@ -19,6 +19,7 @@ def main():
         max_pages=1,
         headless=True,
         job_bank_only=True,
+        recent_jobs_only=True,
         use_database=False,
     )
 

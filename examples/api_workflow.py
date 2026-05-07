@@ -36,6 +36,7 @@ def main():
                 "location": "Vancouver",
                 "pages": 1,
                 "job_bank_only": True,
+                "recent_jobs_only": True,
                 "headless": True,
             },
         )
@@ -45,7 +46,7 @@ def main():
 
         jobs = client.get(
             f"/api/v1/jobs/{EXAMPLE_USER_ID}",
-            params={"unposted_only": True, "limit": 5},
+            params={"unposted_only": True, "recent_days": 30, "limit": 5},
         )
         jobs.raise_for_status()
         payload = jobs.json()

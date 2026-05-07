@@ -25,6 +25,7 @@ class ScraperService:
         location: str = "Canada",
         pages: int = 1,
         job_bank_only: bool = True,
+        recent_jobs_only: bool = True,
         headless: bool = True
     ) -> Dict[str, Any]:
         """
@@ -36,6 +37,7 @@ class ScraperService:
             location: Job location
             pages: Number of pages to scrape
             job_bank_only: Only Job Bank postings
+            recent_jobs_only: Only jobs posted in the last 30 days
             headless: Run browser in headless mode
             
         Returns:
@@ -61,7 +63,7 @@ class ScraperService:
                     scraper.db = JobBankDB(db_path=str(db_path))
                     # Enable saving to DB now that the user-specific DB is attached
                     scraper.use_database = True
-                    return scraper.search_jobs(keyword, location, pages, job_bank_only)
+                    return scraper.search_jobs(keyword, location, pages, job_bank_only, recent_jobs_only)
             
             results = await loop.run_in_executor(None, run_scraper_with_db)
             

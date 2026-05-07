@@ -189,7 +189,8 @@ class SetupHandler:
             success_msg = messages.CONFIG_SAVED.format(
                 channel_id=channel_id,
                 interval_hours=config_data.get('interval_hours', 1),
-                job_bank_only=config_data.get('job_bank_only', True)
+                job_bank_only=config_data.get('job_bank_only', True),
+                recent_jobs_only=config_data.get('recent_jobs_only', True)
             )
             
             await update.message.reply_text(
@@ -240,6 +241,8 @@ class SetupHandler:
                         config_data['interval_hours'] = 1
                 elif key in ('job_bank_only', 'job bank only'):
                     config_data['job_bank_only'] = value.lower() in ('true', 'yes', '1')
+                elif key in ('recent_jobs_only', 'recent jobs only'):
+                    config_data['recent_jobs_only'] = value.lower() in ('true', 'yes', '1')
         
         return config_data
     
@@ -263,6 +266,8 @@ class SetupHandler:
         
         if 'job_bank_only' not in config_data:
             config_data['job_bank_only'] = True
+        if 'recent_jobs_only' not in config_data:
+            config_data['recent_jobs_only'] = True
         
         # Validate interval
         interval = config_data.get('interval_hours', 1)
@@ -292,6 +297,7 @@ class SetupHandler:
                 'interval_hours': config_data.get('interval_hours', 1),
                 'headless': True,
                 'job_bank_only': config_data.get('job_bank_only', True),
+                'recent_jobs_only': config_data.get('recent_jobs_only', True),
                 'last_job_search_at': None
             },
             'searches': [],

@@ -12,6 +12,7 @@ I designed it this way because I wanted to practice building an API, connecting 
 - Lets users manage searches, blacklist keywords, and request new jobs from Telegram
 - Posts new jobs to a configured Telegram channel
 - Avoids reposting the same job twice
+- Can limit scraping and posting to jobs from the last 30 days
 - Provides a FastAPI backend with API docs
 - Includes a command-line scraper for manual checks and exports
 - Includes tests for the API, services, database, and scraper workflow
@@ -140,6 +141,7 @@ scraping:
   interval_hours: 12
   headless: true
   job_bank_only: true
+  recent_jobs_only: true
   last_job_search_at: null
 searches:
   - keyword: "Data Analyst"
@@ -161,6 +163,7 @@ The API and bot are the main workflow, but the CLI is useful for manual scraping
 ```bash
 python -m src.main -k "data analyst" -l "Vancouver" -p 3
 python -m src.main -k "developer" -l "Toronto" --job-bank-only
+python -m src.main -k "developer" -l "Canada" --recent-jobs-only
 python -m src.main --stats
 python -m src.main --export jobs.csv
 ```

@@ -62,12 +62,14 @@ class SettingsHandler:
         channel_id = config.get('channel_id', 'Not set')
         interval_hours = config['scraping'].get('interval_hours', 1)
         job_bank_only = config['scraping'].get('job_bank_only', True)
+        recent_jobs_only = config['scraping'].get('recent_jobs_only', True)
         add_hashtags = config['posting'].get('add_hashtags', True)
         
         message = messages.SETTINGS_MENU.format(
             channel=channel_id,
             interval=interval_hours,
             job_bank_only=job_bank_only,
+            recent_jobs_only=recent_jobs_only,
             search_count=len(config.get('searches', [])),
             blacklist_count=len(config.get('filters', {}).get('keywords_blacklist', []))
         )
@@ -159,7 +161,8 @@ class SettingsHandler:
         template = messages.UPDATE_CONFIG_TEMPLATE.format(
             channel=config.get('channel_id', '@YourChannel'),
             interval=config['scraping'].get('interval_hours', 1),
-            job_bank_only=str(config['scraping'].get('job_bank_only', True)).lower()
+            job_bank_only=str(config['scraping'].get('job_bank_only', True)).lower(),
+            recent_jobs_only=str(config['scraping'].get('recent_jobs_only', True)).lower()
         )
         
         keyboard = [[InlineKeyboardButton("« Back to Settings", callback_data="menu_config")]]
@@ -178,6 +181,7 @@ class SettingsHandler:
             channel_id: @MyChannel
             interval_hours: 2
             job_bank_only: true
+            recent_jobs_only: true
         
         Args:
             update: Update with message
@@ -237,6 +241,8 @@ class SettingsHandler:
                 changes.append(f"• Interval: {config_data['interval_hours']} hours")
             if 'job_bank_only' in config_data:
                 changes.append(f"• Job Bank only: {config_data['job_bank_only']}")
+            if 'recent_jobs_only' in config_data:
+                changes.append(f"• Last 30 days only: {config_data['recent_jobs_only']}")
             
             changes_str = "\n".join(changes)
             
@@ -279,6 +285,8 @@ class SettingsHandler:
                         pass
                 elif key == 'job_bank_only':
                     config_data['job_bank_only'] = value.lower() in ('true', 'yes', '1')
+                elif key == 'recent_jobs_only':
+                    config_data['recent_jobs_only'] = value.lower() in ('true', 'yes', '1')
         
         return config_data
     
@@ -306,6 +314,10 @@ class SettingsHandler:
         if 'job_bank_only' in config_data:
             self.config_mgr.update_config_field(
                 user_id, 'scraping.job_bank_only', config_data['job_bank_only']
+            )
+        if 'recent_jobs_only' in config_data:
+            self.config_mgr.update_config_field(
+                user_id, 'scraping.recent_jobs_only', config_data['recent_jobs_only']
             )
         
         self.logger.info(f"Config updated for user {user_id}: {config_data}")

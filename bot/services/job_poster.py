@@ -105,7 +105,8 @@ class JobPoster:
         search_info = {
             'timestamp': datetime.now(),
             'searches': searches,
-            'job_bank_only': config['scraping'].get('job_bank_only', True)
+            'job_bank_only': config['scraping'].get('job_bank_only', True),
+            'recent_jobs_only': config['scraping'].get('recent_jobs_only', True)
         }
         
         scrape_completed = False
@@ -116,6 +117,7 @@ class JobPoster:
                 location = search.get('location', 'Canada')
                 pages = search.get('pages', 1000)
                 job_bank_only = config['scraping'].get('job_bank_only', True)
+                recent_jobs_only = config['scraping'].get('recent_jobs_only', True)
                 
                 self.logger.info(f"Scraping: {keyword} in {location}")
                 
@@ -125,7 +127,8 @@ class JobPoster:
                     keyword=keyword,
                     location=location,
                     pages=pages,
-                    job_bank_only=job_bank_only
+                    job_bank_only=job_bank_only,
+                    recent_jobs_only=recent_jobs_only
                 )
                 
                 self.logger.info(f"Scrape result: {result.get('jobs_found', 0)} jobs found")
@@ -147,10 +150,12 @@ class JobPoster:
         # Step 2: Get all unposted jobs from API (no per-run cap on Telegram side)
         try:
             job_bank_only = config['scraping'].get('job_bank_only', True)
+            recent_jobs_only = config['scraping'].get('recent_jobs_only', True)
             request_limit = self.config_mgr.get_user_limit_request(user_id)
             unposted = self.api.get_unposted_jobs(
                 user_id=user_id,
                 job_bank_only=job_bank_only,
+                recent_days=30 if recent_jobs_only else None,
                 limit=request_limit
             )
             self.logger.info(
@@ -237,7 +242,7 @@ class JobPoster:
             user_id: Telegram user ID
             jobs: List of job dictionaries
             config: User configuration
-            search_info: Info about the search (timestamp, searches, job_bank_only)
+            search_info: Info about the search (timestamp, searches, filters)
             
         Returns:
             Number of jobs successfully posted
@@ -437,7 +442,7 @@ class JobPoster:
         
         Args:
             channel_id: Telegram channel ID
-            search_info: Info about the search (timestamp, searches, job_bank_only)
+            search_info: Info about the search (timestamp, searches, filters)
             job_count: Number of jobs being posted
         """
         from datetime import datetime
@@ -445,6 +450,7 @@ class JobPoster:
         timestamp = search_info.get('timestamp', datetime.now())
         searches = search_info.get('searches', [])
         job_bank_only = search_info.get('job_bank_only', True)
+        recent_jobs_only = search_info.get('recent_jobs_only', True)
         
         # Format timestamp
         time_str = timestamp.strftime("%B %d, %Y at %I:%M %p")
@@ -465,6 +471,7 @@ class JobPoster:
         message += f"🗓 <b>Date:</b> {time_str}\n"
         message += f"🔍 <b>Searches:</b>\n{searches_text}\n"
         message += f"🏢 <b>Source:</b> {'Job Bank Only' if job_bank_only else 'All Sources'}\n"
+        message += f"🕒 <b>Date Filter:</b> {'Last 30 Days' if recent_jobs_only else 'Any Posted Date'}\n"
         message += f"📝 <b>Jobs Found:</b> {job_count}\n\n"
         message += f"<b>━━━━━━━━━━━━━━━━━━━━━━</b>"
         

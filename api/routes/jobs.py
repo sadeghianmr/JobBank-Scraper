@@ -50,6 +50,7 @@ async def filter_jobs(request: JobFilter):
         location=request.location,
         min_salary=request.min_salary,
         source=request.source,
+        recent_days=request.recent_days,
         limit=request.limit,
         offset=request.offset,
         posted_only=request.posted_only,
@@ -66,6 +67,7 @@ async def get_user_jobs(
     location: Optional[str] = None,
     min_salary: Optional[int] = None,
     source: Optional[str] = None,
+    recent_days: Optional[int] = Query(None, ge=1, le=365),
     limit: Optional[int] = Query(None, ge=MIN_USER_LIMIT_REQUEST, le=MAX_USER_LIMIT_REQUEST),
     offset: int = Query(0, ge=0),
     posted_only: bool = False,
@@ -80,6 +82,7 @@ async def get_user_jobs(
         location: Filter by location
         min_salary: Minimum salary
         source: Filter by source
+        recent_days: Only jobs posted within this many days
         limit: Max results. Defaults to user's user_limit_request config.
         offset: Offset for pagination
         posted_only: Only posted jobs
@@ -94,6 +97,7 @@ async def get_user_jobs(
         location=location,
         min_salary=min_salary,
         source=source,
+        recent_days=recent_days,
         limit=limit,
         offset=offset,
         posted_only=posted_only,

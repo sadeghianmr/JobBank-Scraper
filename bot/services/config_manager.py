@@ -403,6 +403,7 @@ class ConfigManager:
             'interval_hours': 1,
             'headless': True,
             'job_bank_only': True,
+            'recent_jobs_only': True,
             'last_job_search_at': None,
         }
         for key, value in scraping_defaults.items():
@@ -458,6 +459,7 @@ class ConfigManager:
                 'interval_hours': 1,
                 'headless': True,
                 'job_bank_only': True,
+                'recent_jobs_only': True,
                 'last_job_search_at': None
             },
             'searches': [],

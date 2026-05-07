@@ -13,6 +13,7 @@ class ScrapeRequest(BaseModel):
     location: str = Field(default="Canada", min_length=1)
     pages: int = Field(default=1, ge=1, le=1000)
     job_bank_only: bool = True
+    recent_jobs_only: bool = True
     headless: bool = True
 
 
@@ -23,6 +24,7 @@ class JobFilter(BaseModel):
     location: Optional[str] = None
     min_salary: Optional[int] = None
     source: Optional[str] = None
+    recent_days: Optional[int] = Field(default=None, ge=1, le=365)
     limit: Optional[int] = Field(default=None, ge=MIN_USER_LIMIT_REQUEST, le=MAX_USER_LIMIT_REQUEST)
     offset: int = Field(default=0, ge=0)
     posted_only: bool = False

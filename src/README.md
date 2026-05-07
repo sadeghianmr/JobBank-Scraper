@@ -18,6 +18,7 @@ From the project root:
 
 ```bash
 python -m src.main -k "data analyst" -l "Vancouver" -p 3
+python -m src.main -k "developer" -l "Canada" --job-bank-only --recent-jobs-only
 python -m src.main --stats
 python -m src.main --export jobs.csv
 ```

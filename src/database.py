@@ -2,7 +2,7 @@
 
 import sqlite3
 from pathlib import Path
-from datetime import datetime
+from datetime import datetime, timedelta
 from typing import List, Dict, Any, Optional
 from src.config import BASE_DIR, DEFAULT_USER_LIMIT_REQUEST
 
@@ -302,7 +302,8 @@ class JobBankDB:
     
     def get_unposted_jobs(self, job_bank_only: bool = False, 
                          min_salary: Optional[int] = None,
-                         locations: Optional[List[str]] = None) -> List[Dict[str, Any]]:
+                         locations: Optional[List[str]] = None,
+                         recent_days: Optional[int] = None) -> List[Dict[str, Any]]:
         """
         Get jobs that haven't been posted to Telegram yet.
         
@@ -310,6 +311,7 @@ class JobBankDB:
             job_bank_only: If True, only return Job Bank source jobs
             min_salary: Minimum salary filter (optional)
             locations: List of locations to filter (optional)
+            recent_days: Only return jobs posted within this many days (optional)
             
         Returns:
             List of unposted job dictionaries
@@ -337,6 +339,9 @@ class JobBankDB:
         cursor.execute(query, params)
         rows = cursor.fetchall()
         jobs = [dict(row) for row in rows]
+
+        if recent_days:
+            jobs = self.filter_recent_jobs(jobs, recent_days)
         
         # Filter by salary if specified
         if min_salary:
@@ -348,6 +353,43 @@ class JobBankDB:
             return filtered_jobs
         
         return jobs
+
+    def filter_recent_jobs(self, jobs: List[Dict[str, Any]], days: int) -> List[Dict[str, Any]]:
+        """Return only jobs with a posted date inside the requested window."""
+        return [job for job in jobs if self.is_recent_job(job, days)]
+
+    @staticmethod
+    def is_recent_job(job: Dict[str, Any], days: int) -> bool:
+        """Return True when date_posted is within the requested number of days."""
+        posted_date = JobBankDB.parse_posted_date(job.get('date_posted'))
+        if not posted_date:
+            return False
+
+        cutoff = datetime.now().date() - timedelta(days=days)
+        return posted_date >= cutoff
+
+    @staticmethod
+    def parse_posted_date(value: Optional[str]):
+        """Parse common Job Bank date strings into a date object."""
+        if not value:
+            return None
+
+        text = str(value).strip()
+        text = text.replace("Posted on", "").strip()
+        lower_text = text.lower()
+
+        if lower_text == "today":
+            return datetime.now().date()
+        if lower_text == "yesterday":
+            return datetime.now().date() - timedelta(days=1)
+
+        for date_format in ("%B %d, %Y", "%b %d, %Y", "%Y-%m-%d"):
+            try:
+                return datetime.strptime(text, date_format).date()
+            except ValueError:
+                continue
+
+        return None
     
     def _extract_salary_value(self, salary_str: str) -> int:
         """

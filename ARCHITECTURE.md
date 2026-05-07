@@ -151,6 +151,7 @@ scraping:
   interval_hours: 12
   headless: true
   job_bank_only: true
+  recent_jobs_only: true
   last_job_search_at: null
 searches:
   - keyword: "Data Analyst"
@@ -178,6 +179,16 @@ fsrc=16
 ```
 
 Because the source filter is applied at the URL level, the scraper trusts that result set and marks those rows as `source = "Job Bank"`. If `job_bank_only` is false, the scraper uses the normal URL and parses the source from each listing.
+
+## Recent Jobs Mode
+
+If `scraping.recent_jobs_only` is true, the scraper adds Job Bank's 30-day age filter to the search URL:
+
+```text
+fage=30
+```
+
+The bot also requests only unposted jobs with `recent_days=30` before posting. That second check keeps older jobs already sitting in a local database from being posted later.
 
 ## Database
 

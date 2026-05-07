@@ -27,6 +27,7 @@ class JobService:
         location: Optional[str] = None,
         min_salary: Optional[int] = None,
         source: Optional[str] = None,
+        recent_days: Optional[int] = None,
         limit: Optional[int] = None,
         offset: int = 0,
         posted_only: bool = False,
@@ -41,6 +42,7 @@ class JobService:
             location: Filter by location
             min_salary: Minimum salary
             source: Filter by source
+            recent_days: Only return jobs posted within this many days
             limit: Max results
             offset: Offset for pagination
             posted_only: Only posted jobs
@@ -58,7 +60,8 @@ class JobService:
             if unposted_only:
                 jobs = db.get_unposted_jobs(
                     job_bank_only=(source == "Job Bank"),
-                    min_salary=min_salary
+                    min_salary=min_salary,
+                    recent_days=recent_days
                 )
             else:
                 jobs = db.search_jobs(
@@ -67,6 +70,9 @@ class JobService:
                     min_salary=min_salary,
                     limit=resolved_limit + offset  # Get more for offset
                 )
+
+                if recent_days:
+                    jobs = db.filter_recent_jobs(jobs, recent_days)
             
             # Filter by posted status if needed
             if posted_only:

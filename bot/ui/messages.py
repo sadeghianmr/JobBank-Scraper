@@ -37,6 +37,7 @@ SETUP_TEMPLATE = """
 Channel: @your_channel_name
 Interval: 12
 Job Bank Only: true
+Recent Jobs Only: true
 ```
 """
 
@@ -45,6 +46,7 @@ SETUP_INSTRUCTIONS = """
 - **Channel**: Your Telegram channel username (must start with @)
 - **Interval**: Hours between automatic checks (1-24)
 - **Job Bank Only**: 'true' or 'false' - whether to include Indeed/other sources
+- **Recent Jobs Only**: 'true' or 'false' - only use jobs posted in the last 30 days
 
 Copy the template above, fill in your details, and send it back to me!
 You can add searches and blacklist keywords later from the menu.
@@ -56,6 +58,7 @@ CONFIG_SAVED = """
 Channel: `{channel_id}`
 Interval: {interval_hours} hours
 Job Bank only: {job_bank_only}
+Recent jobs only: {recent_jobs_only}
 
 🎉 *Your bot is ready!*
 
@@ -112,6 +115,7 @@ Current configuration:
 • Channel: {channel}
 • Check interval: Every {interval} hours
 • Job Bank only: {job_bank_only}
+• Recent jobs only: {recent_jobs_only}
 • Active searches: {search_count}
 • Blacklist keywords: {blacklist_count}
 """
@@ -395,6 +399,7 @@ Current settings:
 Channel: {channel}
 Interval: {interval}
 Job Bank Only: {job_bank_only}
+Recent Jobs Only: {recent_jobs_only}
 ```
 
 Send me updated settings in this format:
@@ -402,6 +407,7 @@ Send me updated settings in this format:
 Channel: @your_channel
 Interval: 12
 Job Bank Only: true
+Recent Jobs Only: true
 ```
 
 You can update all fields or just some of them.

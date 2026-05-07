@@ -101,6 +101,41 @@ def test_get_jobs_uses_configured_default_limit(populated_db, monkeypatch):
     assert len(result["jobs"]) == 2
 
 
+def test_get_unposted_jobs_filters_recent_posted_dates(temp_db):
+    """Older unposted jobs should not be returned when recent_days is set."""
+    service = JobService()
+    service.get_user_db_path = lambda user_id: temp_db
+
+    with JobBankDB(db_path=str(temp_db)) as db:
+        db.add_job({
+            "job_id": "recent-job",
+            "title": "Recent Data Analyst",
+            "company": "Data Inc",
+            "location": "Vancouver, BC",
+            "salary": "$80,000",
+            "job_type": "Full-time",
+            "date_posted": "May 01, 2026",
+            "url": "https://jobbank.gc.ca/job/recent",
+            "source": "Job Bank",
+        })
+        db.add_job({
+            "job_id": "old-job",
+            "title": "Old Data Analyst",
+            "company": "Old Inc",
+            "location": "Vancouver, BC",
+            "salary": "$80,000",
+            "job_type": "Full-time",
+            "date_posted": "February 20, 2026",
+            "url": "https://jobbank.gc.ca/job/old",
+            "source": "Job Bank",
+        })
+
+    result = service.get_jobs(user_id=123, unposted_only=True, recent_days=30)
+    job_ids = {job["job_id"] for job in result["jobs"]}
+
+    assert job_ids == {"recent-job"}
+
+
 def test_get_jobs_with_keyword_filter(populated_db):
     """
     Test filtering jobs by keyword.

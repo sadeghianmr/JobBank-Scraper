@@ -92,6 +92,7 @@ class JobBankAPI:
         location: str = "Canada",
         pages: int = 1,
         job_bank_only: bool = True,
+        recent_jobs_only: bool = True,
         headless: bool = True
     ) -> Dict[str, Any]:
         """
@@ -105,6 +106,7 @@ class JobBankAPI:
             location: Search location
             pages: Number of pages to scrape
             job_bank_only: Only Job Bank postings (exclude Indeed, etc.)
+            recent_jobs_only: Only jobs posted in the last 30 days
             headless: Run browser in headless mode
             
         Returns:
@@ -119,6 +121,7 @@ class JobBankAPI:
             "location": location,
             "pages": pages,
             "job_bank_only": job_bank_only,
+            "recent_jobs_only": recent_jobs_only,
             "headless": headless
         }
         
@@ -133,6 +136,7 @@ class JobBankAPI:
         self,
         user_id: int,
         job_bank_only: bool = True,
+        recent_days: Optional[int] = None,
         limit: int = None
     ) -> List[Dict[str, Any]]:
         """
@@ -143,6 +147,7 @@ class JobBankAPI:
         Args:
             user_id: User ID
             job_bank_only: Filter to only Job Bank postings
+            recent_days: Filter to jobs posted within this many days
             limit: Maximum jobs to return (None = use user config default)
             
         Returns:
@@ -154,6 +159,8 @@ class JobBankAPI:
         }
         if limit is not None:
             params["limit"] = limit
+        if recent_days is not None:
+            params["recent_days"] = recent_days
         if job_bank_only:
             params["source"] = "Job Bank"
         

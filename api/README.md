@@ -2,6 +2,8 @@
 
 `api/` contains the FastAPI backend used by the Telegram bot. It starts scrape jobs, reads user databases, returns stats, and marks jobs as posted after the bot sends them to Telegram.
 
+Scrape requests can enable `job_bank_only` for Job Bank source filtering and `recent_jobs_only` for Job Bank's last-30-days filter. Job queries can also use `recent_days=30` so old unposted rows already in a database are not returned to the bot.
+
 ## Main Files
 
 - `main.py`: FastAPI app setup, CORS, routers, and health check.
