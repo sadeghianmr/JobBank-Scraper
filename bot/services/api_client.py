@@ -52,9 +52,9 @@ class JobBankAPI:
     def _get_timeout_from_env(self) -> float:
         """Read API timeout from environment, falling back to a scraper-friendly default."""
         try:
-            return float(os.getenv("API_REQUEST_TIMEOUT_SECONDS", "300"))
+            return float(os.getenv("API_REQUEST_TIMEOUT_SECONDS", "1200"))
         except ValueError:
-            return 300.0
+            return 1200.0
     
     def _handle_response(self, response: httpx.Response) -> Dict[str, Any]:
         """

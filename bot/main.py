@@ -80,9 +80,9 @@ class JobBankBot:
         self.job_poster = None
         self.interval_check_task = None
         try:
-            self.scheduler_poll_seconds = int(os.getenv("BOT_SCHEDULER_POLL_SECONDS", "300"))
+            self.scheduler_poll_seconds = int(os.getenv("BOT_SCHEDULER_POLL_SECONDS", "900"))
         except ValueError:
-            self.scheduler_poll_seconds = 300
+            self.scheduler_poll_seconds = 900
         
         # Handlers
         self.setup_handler = None

@@ -6,7 +6,7 @@ set -euo pipefail
 # User-editable settings.
 JOBBANK_USER_ID="${JOBBANK_USER_ID:-6192760553}"
 PROJECT_DIR="${PROJECT_DIR:-/Users/mrsadeghian/Code/JobBank-Scraper}"
-RUN_DURATION_SECONDS="${RUN_DURATION_SECONDS:-1800}"
+RUN_DURATION_SECONDS="${RUN_DURATION_SECONDS:-3600}"
 API_URL="${API_URL:-http://localhost:8000}"
 LOCK_FILE="${LOCK_FILE:-/tmp/jobbank-scraper-runner.lock}"
 
@@ -117,7 +117,7 @@ run_stack_once() {
         started_api=1
 
         echo "$(date) Waiting for API health check..."
-        for _ in {1..30}; do
+        for _ in {1..60}; do
             if curl -fsS "$API_URL/health" >/dev/null 2>&1; then
                 break
             fi

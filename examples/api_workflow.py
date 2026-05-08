@@ -22,7 +22,7 @@ EXAMPLE_USER_ID = int(os.getenv("EXAMPLE_USER_ID", "900001"))
 
 def main():
     """Scrape, read unposted jobs, mark a small sample, and print stats."""
-    with httpx.Client(base_url=API_BASE_URL, timeout=120) as client:
+    with httpx.Client(base_url=API_BASE_URL, timeout=1200) as client:
         health = client.get("/health")
         health.raise_for_status()
         print("Health check:")

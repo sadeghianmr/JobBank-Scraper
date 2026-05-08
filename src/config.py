@@ -18,7 +18,7 @@ JOB_SEARCH_URL = f"{JOB_BANK_BASE_URL}/jobsearch/jobsearch"
 
 # Scraper settings
 HEADLESS = True  # Run browser in headless mode
-TIMEOUT = 30000  # Page load timeout in milliseconds
+TIMEOUT = 60000  # Page load timeout in milliseconds
 WAIT_TIME = 2    # Wait time between requests (in seconds)
 MAX_RETRIES = 3  # Maximum number of retries for failed requests
 

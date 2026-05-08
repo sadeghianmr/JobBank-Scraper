@@ -105,8 +105,8 @@ Edit `.env`:
 ```env
 TELEGRAM_BOT_TOKEN=your_telegram_bot_token_here
 API_BASE_URL=http://localhost:8000
-API_REQUEST_TIMEOUT_SECONDS=300
-BOT_SCHEDULER_POLL_SECONDS=300
+API_REQUEST_TIMEOUT_SECONDS=1200
+BOT_SCHEDULER_POLL_SECONDS=900
 ```
 
 Do not commit `.env`, runtime databases, logs, or generated files.

@@ -17,7 +17,7 @@ When a new runner starts, it stops any older runner recorded in the lock file fi
 You can change the runtime:
 
 ```bash
-RUN_DURATION_SECONDS=900 scripts/run_stack.sh
+RUN_DURATION_SECONDS=3600 scripts/run_stack.sh
 ```
 
 The script has user-editable variables at the top:
@@ -25,7 +25,7 @@ The script has user-editable variables at the top:
 ```bash
 JOBBANK_USER_ID="${JOBBANK_USER_ID:-6192760553}"
 PROJECT_DIR="${PROJECT_DIR:-/Users/mrsadeghian/Code/JobBank-Scraper}"
-RUN_DURATION_SECONDS="${RUN_DURATION_SECONDS:-1800}"
+RUN_DURATION_SECONDS="${RUN_DURATION_SECONDS:-3600}"
 ```
 
 ## LaunchAgent

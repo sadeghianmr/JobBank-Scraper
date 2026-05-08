@@ -228,7 +228,7 @@ class JobBankScraper:
         
         # Wait for job listings to load
         try:
-            self.page.wait_for_selector('a.resultJobItem', timeout=10000)
+            self.page.wait_for_selector('a.resultJobItem', timeout=20000)
         except PlaywrightTimeout:
             print("⚠️  No job listings found")
             return jobs
