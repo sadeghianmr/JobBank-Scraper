@@ -95,9 +95,22 @@ class JobBankDB:
         Returns:
             True if job exists, False otherwise
         """
+        job_id = self.normalize_job_id(job_id)
         cursor = self.connection.cursor()
         cursor.execute("SELECT 1 FROM JobBank WHERE job_id = ?", (job_id,))
         return cursor.fetchone() is not None
+
+    @staticmethod
+    def normalize_job_id(job_id: Any) -> str:
+        """Return the stable Job Bank posting ID without URL query/fragment noise."""
+        if job_id is None:
+            return ""
+
+        normalized = str(job_id).strip()
+        normalized = normalized.split("#", 1)[0]
+        normalized = normalized.split("?", 1)[0]
+        normalized = normalized.split(";", 1)[0]
+        return normalized
     
     def add_job(self, job_data: Dict[str, Any]) -> bool:
         """
@@ -109,11 +122,13 @@ class JobBankDB:
         Returns:
             True if new job added, False if job already existed (updated instead)
         """
-        job_id = job_data.get('job_id')
+        job_id = self.normalize_job_id(job_data.get('job_id'))
         
         if not job_id:
             print("⚠️  Job missing job_id, skipping database insert")
             return False
+
+        job_data['job_id'] = job_id
         
         cursor = self.connection.cursor()
         

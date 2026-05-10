@@ -275,7 +275,7 @@ class JobBankScraper:
         href = article.get('href', '')
         if href:
             job['url'] = f"https://www.jobbank.gc.ca{href}"
-            job['job_id'] = href.split('/')[-1].split(';')[0] if '/' in href else None
+            job['job_id'] = JobBankDB.normalize_job_id(href.split('/')[-1]) if '/' in href else None
         else:
             return None
         

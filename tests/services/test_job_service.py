@@ -136,6 +136,34 @@ def test_get_unposted_jobs_filters_recent_posted_dates(temp_db):
     assert job_ids == {"recent-job"}
 
 
+def test_database_normalizes_job_id_before_duplicate_check(temp_db):
+    """The same Job Bank posting should not be duplicated by URL query params."""
+    base_job = {
+        "job_id": "49405461",
+        "title": "Software Developer",
+        "company": "Jarvis Consulting Group",
+        "location": "Toronto, ON",
+        "salary": "$50.00 hourly",
+        "job_type": "Full-time",
+        "date_posted": "April 27, 2026",
+        "url": "https://www.jobbank.gc.ca/jobsearch/jobposting/49405461",
+        "source": "Job Bank",
+    }
+
+    with JobBankDB(db_path=str(temp_db)) as db:
+        assert db.add_job(base_job.copy()) is True
+
+        duplicate = base_job.copy()
+        duplicate["job_id"] = "49405461?source=searchresults"
+        duplicate["url"] = "https://www.jobbank.gc.ca/jobsearch/jobposting/49405461?source=searchresults"
+
+        assert db.add_job(duplicate) is False
+        jobs = db.get_all_jobs()
+
+    assert len(jobs) == 1
+    assert jobs[0]["job_id"] == "49405461"
+
+
 def test_get_jobs_with_keyword_filter(populated_db):
     """
     Test filtering jobs by keyword.
