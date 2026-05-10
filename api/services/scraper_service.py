@@ -2,14 +2,15 @@
 
 import logging
 import asyncio
+from concurrent.futures import ThreadPoolExecutor
 from typing import Dict, Any
-from pathlib import Path
-from functools import partial
 
-from src.scraper import quick_search
 from .job_service import JobService
 
 logger = logging.getLogger(__name__)
+
+_scraper_executor = ThreadPoolExecutor(max_workers=1, thread_name_prefix="jobbank-scraper")
+_scraper_lock = asyncio.Lock()
 
 
 class ScraperService:
@@ -49,11 +50,10 @@ class ScraperService:
             # Get user's database path
             db_path = self.job_service.get_user_db_path(user_id)
             
-            # Run scraper in thread pool to avoid blocking async event loop
-            # quick_search uses sync_playwright which can't run in async context
-            # NOTE: quick_search doesn't accept db_path parameter, so we need to
-            # use a wrapper function that creates scraper with correct db_path
-            loop = asyncio.get_event_loop()
+            # Run the sync Playwright scraper outside FastAPI's asyncio loop.
+            # A single worker avoids overlapping browser launches when the bot
+            # runs several saved searches back-to-back.
+            loop = asyncio.get_running_loop()
             
             def run_scraper_with_db():
                 from src.scraper import JobBankScraper
@@ -65,7 +65,8 @@ class ScraperService:
                     scraper.use_database = True
                     return scraper.search_jobs(keyword, location, pages, job_bank_only, recent_jobs_only)
             
-            results = await loop.run_in_executor(None, run_scraper_with_db)
+            async with _scraper_lock:
+                results = await loop.run_in_executor(_scraper_executor, run_scraper_with_db)
             
             # Get statistics
             stats = self.job_service.get_stats(user_id)
