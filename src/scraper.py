@@ -180,9 +180,30 @@ class JobBankScraper:
                         stats['new'],
                         stats['existing']
                     )
+                    logger.info(
+                        "Page %s job ids: %s",
+                        page_num,
+                        ", ".join(job.get('job_id', '') for job in jobs)
+                    )
+                    if stats['new_job_ids']:
+                        new_job_titles = [
+                            f"{job.get('job_id')}:{job.get('title', 'Untitled')}"
+                            for job in jobs
+                            if job.get('job_id') in stats['new_job_ids']
+                        ]
+                        logger.info(
+                            "Page %s new jobs: %s",
+                            page_num,
+                            " | ".join(new_job_titles)
+                        )
                 else:
                     print(f"✓ Found {len(jobs)} jobs on page {page_num}")
                     logger.info("Page %s scraped: %s jobs", page_num, len(jobs))
+                    logger.info(
+                        "Page %s job ids: %s",
+                        page_num,
+                        ", ".join(job.get('job_id', '') for job in jobs)
+                    )
                 
                 all_jobs.extend(jobs)
 

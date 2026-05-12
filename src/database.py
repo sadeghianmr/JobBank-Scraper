@@ -174,16 +174,27 @@ class JobBankDB:
         Returns:
             Dictionary with counts of new, existing, and skipped jobs
         """
-        stats = {'new': 0, 'existing': 0, 'skipped': 0}
+        stats = {
+            'new': 0,
+            'existing': 0,
+            'skipped': 0,
+            'new_job_ids': [],
+            'existing_job_ids': [],
+            'skipped_job_ids': [],
+        }
         
         for job in jobs:
+            job_id = self.normalize_job_id(job.get('job_id'))
             if self.add_job(job):
                 stats['new'] += 1
+                stats['new_job_ids'].append(job_id)
             else:
-                if job.get('job_id'):
+                if job_id:
                     stats['existing'] += 1
+                    stats['existing_job_ids'].append(job_id)
                 else:
                     stats['skipped'] += 1
+                    stats['skipped_job_ids'].append(job.get('job_id'))
         
         return stats
     

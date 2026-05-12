@@ -45,6 +45,7 @@ class JobPoster:
         
         # Track active users (user_id -> is_running status)
         self.active_users = {}
+        self.last_run_summaries = {}
     
     async def check_and_post_jobs(
         self,
@@ -87,6 +88,20 @@ class JobPoster:
         if not searches:
             self.logger.info(f"User {user_id} has no searches configured")
             return 0
+
+        run_summary = {
+            'trigger_label': trigger_label,
+            'total_searches': len(searches),
+            'completed_searches': 0,
+            'failed_searches': 0,
+            'scraped_jobs': 0,
+            'unposted_jobs': 0,
+            'blacklist_filtered': 0,
+            'posted_jobs': 0,
+            'search_results': [],
+            'errors': [],
+        }
+        self.last_run_summaries[user_id] = run_summary
 
         if notify_user:
             await self._send_user_status_message(
@@ -131,11 +146,49 @@ class JobPoster:
                     recent_jobs_only=recent_jobs_only
                 )
                 
-                self.logger.info(f"Scrape result: {result.get('jobs_found', 0)} jobs found")
+                jobs_found = result.get('jobs_found', 0)
+                self.logger.info(f"Scrape result: {jobs_found} jobs found")
+                run_summary['completed_searches'] += 1
+                run_summary['scraped_jobs'] += jobs_found
+                run_summary['search_results'].append({
+                    'keyword': keyword,
+                    'location': location,
+                    'pages': pages,
+                    'jobs_found': jobs_found,
+                    'success': True,
+                })
+                if notify_user:
+                    await self._send_user_status_message(
+                        user_id,
+                        (
+                            f"✅ Search {run_summary['completed_searches'] + run_summary['failed_searches']}/"
+                            f"{len(searches)} complete: {keyword} in {location}\n"
+                            f"Scraped {jobs_found} job(s)."
+                        )
+                    )
                 scrape_completed = True
                 
             except Exception as e:
                 self.logger.error(f"Error scraping for user {user_id}: {e}")
+                run_summary['failed_searches'] += 1
+                run_summary['errors'].append(f"{keyword} in {location}: {e}")
+                run_summary['search_results'].append({
+                    'keyword': keyword,
+                    'location': location,
+                    'pages': pages,
+                    'jobs_found': 0,
+                    'success': False,
+                    'error': str(e),
+                })
+                if notify_user:
+                    await self._send_user_status_message(
+                        user_id,
+                        (
+                            f"⚠️ Search {run_summary['completed_searches'] + run_summary['failed_searches']}/"
+                            f"{len(searches)} failed: {keyword} in {location}\n"
+                            f"The bot will continue with the remaining searches."
+                        )
+                    )
                 continue
 
         if scrape_completed:
@@ -158,15 +211,17 @@ class JobPoster:
                 recent_days=30 if recent_jobs_only else None,
                 limit=request_limit
             )
+            run_summary['unposted_jobs'] = len(unposted)
             self.logger.info(
                 f"Found {len(unposted)} unposted jobs using user_limit_request={request_limit}"
             )
         except Exception as e:
             self.logger.error(f"Error fetching unposted jobs: {e}")
+            run_summary['errors'].append(f"Fetching unposted jobs failed: {e}")
             if notify_user:
                 await self._send_user_status_message(
                     user_id,
-                    f"⚠️ {trigger_label} finished, but the bot could not fetch unposted jobs."
+                    self.format_run_summary(run_summary, status="⚠️ Finished with API/database error")
                 )
             return 0
         
@@ -175,7 +230,7 @@ class JobPoster:
             if notify_user:
                 await self._send_user_status_message(
                     user_id,
-                    f"✅ {trigger_label} complete.\n\nNo new jobs were found."
+                    self.format_run_summary(run_summary, status="✅ Complete")
                 )
             return 0
         
@@ -183,6 +238,7 @@ class JobPoster:
         blacklist = config.get('filters', {}).get('keywords_blacklist', [])
         if blacklist:
             filtered_jobs = self._filter_by_blacklist(unposted, blacklist)
+            run_summary['blacklist_filtered'] = len(unposted) - len(filtered_jobs)
             self.logger.info(
                 f"Filtered {len(unposted) - len(filtered_jobs)} jobs by blacklist"
             )
@@ -193,7 +249,7 @@ class JobPoster:
             if notify_user:
                 await self._send_user_status_message(
                     user_id,
-                    f"✅ {trigger_label} complete.\n\nAll new jobs were filtered by your blacklist."
+                    self.format_run_summary(run_summary, status="✅ Complete")
                 )
             return 0
         
@@ -205,6 +261,7 @@ class JobPoster:
         posted_count = await self._post_jobs_to_channel(
             user_id, jobs_to_post, config, search_info
         )
+        run_summary['posted_jobs'] = posted_count
         
         # Step 6: Update user statistics
         self.config_mgr.increment_stat(user_id, 'posted_today', posted_count)
@@ -214,12 +271,35 @@ class JobPoster:
         if notify_user:
             await self._send_user_status_message(
                 user_id,
-                (
-                    f"✅ {trigger_label} complete.\n\n"
-                    f"{posted_count} job(s) posted to your channel."
-                )
+                self.format_run_summary(run_summary, status="✅ Complete")
             )
         return posted_count
+
+    def get_last_run_summary(self, user_id: int) -> Dict[str, Any]:
+        """Return the latest job-check summary for a user."""
+        return self.last_run_summaries.get(user_id, {})
+
+    def format_run_summary(self, summary: Dict[str, Any], status: str) -> str:
+        """Format a concise user-facing run summary."""
+        lines = [
+            f"{status}: {summary.get('trigger_label', 'Job check')}",
+            "",
+            f"Searches: {summary.get('completed_searches', 0)}/{summary.get('total_searches', 0)} completed",
+            f"Failed searches: {summary.get('failed_searches', 0)}",
+            f"Jobs scraped from Job Bank: {summary.get('scraped_jobs', 0)}",
+            f"New unposted jobs found: {summary.get('unposted_jobs', 0)}",
+            f"Filtered by blacklist: {summary.get('blacklist_filtered', 0)}",
+            f"Posted to channel: {summary.get('posted_jobs', 0)}",
+        ]
+
+        failed = [r for r in summary.get('search_results', []) if not r.get('success')]
+        if failed:
+            lines.append("")
+            lines.append("Failed search names:")
+            for item in failed[:5]:
+                lines.append(f"- {item.get('keyword')} in {item.get('location')}")
+
+        return "\n".join(lines)
 
     async def _send_user_status_message(self, user_id: int, message: str):
         """Send a status message to the user, ignoring notification failures."""

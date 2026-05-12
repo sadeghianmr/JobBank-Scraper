@@ -172,21 +172,22 @@ class MenuHandler:
             # Trigger job check and posting
             if self.job_poster:
                 posted_count = await self.job_poster.check_and_post_jobs(user_id)
-                
-                # Show results
-                interval = config['scraping'].get('interval_hours', 1)
-                result_message = messages.CHECKING_COMPLETE.format(
-                    new_jobs=posted_count,
-                    posted_jobs=posted_count
-                )
-                
-                if posted_count == 0:
-                    result_message = messages.NO_NEW_JOBS.format(interval=interval)
+                summary = self.job_poster.get_last_run_summary(user_id)
+
+                if summary:
+                    result_message = self.job_poster.format_run_summary(
+                        summary,
+                        status="✅ Manual check complete"
+                    )
+                else:
+                    result_message = messages.CHECKING_COMPLETE.format(
+                        new_jobs=posted_count,
+                        posted_jobs=posted_count
+                    )
                 
                 await query.edit_message_text(
                     result_message,
                     reply_markup=keyboards.back_to_menu_keyboard(),
-                    parse_mode='Markdown'
                 )
             else:
                 # Job poster not initialized yet
