@@ -164,6 +164,32 @@ def test_database_normalizes_job_id_before_duplicate_check(temp_db):
     assert jobs[0]["job_id"] == "49405461"
 
 
+def test_database_skips_same_visible_posting_with_new_job_id(temp_db):
+    """Re-listed Job Bank postings should not be stored again under a new ID."""
+    original = {
+        "job_id": "49395168",
+        "title": "business development officer",
+        "company": "Unified Automation Inc",
+        "location": "Edmonton (AB)",
+        "salary": "$36.05 hourly",
+        "job_type": "On site",
+        "date_posted": "April 24, 2026",
+        "url": "https://www.jobbank.gc.ca/jobsearch/jobposting/49395168",
+        "source": "Job Bank",
+    }
+    relisted = original.copy()
+    relisted["job_id"] = "49527100"
+    relisted["url"] = "https://www.jobbank.gc.ca/jobsearch/jobposting/49527100"
+
+    with JobBankDB(db_path=str(temp_db)) as db:
+        assert db.add_job(original) is True
+        assert db.add_job(relisted) is False
+        jobs = db.get_all_jobs()
+
+    assert len(jobs) == 1
+    assert jobs[0]["job_id"] == "49395168"
+
+
 def test_get_jobs_with_keyword_filter(populated_db):
     """
     Test filtering jobs by keyword.

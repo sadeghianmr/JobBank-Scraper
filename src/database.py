@@ -1,6 +1,7 @@
 """Database module for storing and managing job data."""
 
 import sqlite3
+import re
 from pathlib import Path
 from datetime import datetime, timedelta
 from typing import List, Dict, Any, Optional
@@ -111,6 +112,47 @@ class JobBankDB:
         normalized = normalized.split("?", 1)[0]
         normalized = normalized.split(";", 1)[0]
         return normalized
+
+    @staticmethod
+    def normalize_fingerprint_value(value: Any) -> str:
+        """Normalize a visible job field for duplicate fingerprint comparisons."""
+        text = "" if value is None else str(value).lower().strip()
+        text = re.sub(r"[^a-z0-9]+", " ", text)
+        return re.sub(r"\s+", " ", text).strip()
+
+    @classmethod
+    def job_fingerprint(cls, job_data: Dict[str, Any]) -> tuple:
+        """
+        Build a stable fingerprint from visible posting fields.
+
+        Job Bank sometimes republishes the same visible posting with a new ID.
+        This fingerprint prevents reposting those duplicates.
+        """
+        return (
+            cls.normalize_fingerprint_value(job_data.get('title')),
+            cls.normalize_fingerprint_value(job_data.get('company')),
+            cls.normalize_fingerprint_value(job_data.get('location')),
+            cls.normalize_fingerprint_value(job_data.get('salary')),
+            cls.normalize_fingerprint_value(job_data.get('job_type')),
+            cls.normalize_fingerprint_value(job_data.get('date_posted')),
+        )
+
+    def find_duplicate_by_fingerprint(self, job_data: Dict[str, Any]) -> Optional[Dict[str, Any]]:
+        """Find an existing row with the same visible posting fingerprint."""
+        fingerprint = self.job_fingerprint(job_data)
+        cursor = self.connection.cursor()
+        cursor.execute("""
+            SELECT * FROM JobBank
+            WHERE is_active = 1
+            ORDER BY posted_to_telegram DESC, scraped_at ASC
+        """)
+
+        for row in cursor.fetchall():
+            existing = dict(row)
+            if self.job_fingerprint(existing) == fingerprint:
+                return existing
+
+        return None
     
     def add_job(self, job_data: Dict[str, Any]) -> bool:
         """
@@ -143,6 +185,21 @@ class JobBankDB:
             """, (job_id,))
             self.connection.commit()
             return False  # Job already existed
+
+        duplicate = self.find_duplicate_by_fingerprint(job_data)
+        if duplicate:
+            cursor.execute("""
+                UPDATE JobBank
+                SET last_seen = CURRENT_TIMESTAMP,
+                    is_active = 1
+                WHERE id = ?
+            """, (duplicate['id'],))
+            self.connection.commit()
+            print(
+                "⚠️  Duplicate visible posting skipped: "
+                f"{job_id} matches existing {duplicate.get('job_id')}"
+            )
+            return False
         else:
             # Insert new job
             cursor.execute("""
